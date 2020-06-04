@@ -27,9 +27,23 @@ namespace TelegramDataEnrichment
             if (eventArgs.msg.text == "/menu")
             {
                 var activeSessions = _sessions.FindAll(s => s.IsActive()).Count;
-                Methods.sendReply(msg.chat.id, msg.message_id,
-                    $"Welcome to the enrichment system menu. There are {_sessions.Count} configured sessions, and {activeSessions} are active.");
+                Methods.sendReply(
+                    msg.chat.id, 
+                    msg.message_id,
+                    $"Welcome to the enrichment system menu. There are {_sessions.Count} configured sessions, and {activeSessions} are active.",
+                    keyboard: MenuKeyboard()
+                    );
             }
+        }
+
+        private static InlineKeyboardMarkup MenuKeyboard()
+        {
+            InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Create new session", "session_create", 0);
+            keyboard.addCallbackButton("Start session", "session_start", 1);
+            keyboard.addCallbackButton("End session", "session_end", 2);
+            keyboard.addCallbackButton("Delete session", "session_delete", 3);
+            return keyboard;
         }
     }
 }
