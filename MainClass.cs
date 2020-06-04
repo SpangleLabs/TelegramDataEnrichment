@@ -1,4 +1,5 @@
-﻿using DreadBot;
+﻿using System;
+using DreadBot;
 
 namespace TelegramDataEnrichment
 {
@@ -8,12 +9,14 @@ namespace TelegramDataEnrichment
 
         public void Init()
         {
-            throw new System.NotImplementedException();
+            var manager = new EnrichmentManager();
+            Events.CallbackEvent += manager.HandleCallback;
+            Events.TextEvent += manager.HandleText;
         }
 
         public void PostInit()
         {
-            throw new System.NotImplementedException();
+            
         }
     }
 }
