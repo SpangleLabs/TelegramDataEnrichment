@@ -2,16 +2,13 @@
 {
     public class EnrichmentSession
     {
-        private bool _isActive;
+        public bool IsActive { get; set; }
+        public string Name { get; }
 
-        public EnrichmentSession()
+        public EnrichmentSession(string name)
         {
-            _isActive = false;
-        }
-
-        public bool IsActive()
-        {
-            return _isActive;
+            Name = name;
+            IsActive = false;
         }
     }
 }
