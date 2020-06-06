@@ -61,36 +61,18 @@ namespace TelegramDataEnrichment
             }
             if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
             {
-                var sessionId = SessionIdFromCallbackData(callback.data);
-                var session = GetSessionById(sessionId);
-                if (session == null)
-                {
-                    menu = new NoMatchingSessionMenu(sessionId);
-                }
-                else
-                {
-                    menu = new DeleteSessionConfirmMenu(session);
-                }
+                menu = ConfirmDeleteSession(callback);
             }
             if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
             {
-                var sessionId = SessionIdFromCallbackData(callback.data);
-                var session = GetSessionById(sessionId);
-                if (session == null)
-                {
-                    menu = new NoMatchingSessionMenu(sessionId);
-                }
-                else
-                {
-                    _sessions.Remove(session);
-                    menu = new DeleteSessionConfirmedMenu();
-                }
+                menu = DeleteSession(callback);
             }
             menu.EditMessage(
                 callback.message.chat.id, 
                 callback.message.message_id
             );
         }
+
 
         public void HandleText(MessageEventArgs eventArgs)
         {
@@ -164,6 +146,39 @@ namespace TelegramDataEnrichment
             return new SessionStoppedMenu();
         }
 
+        private Menu ConfirmDeleteSession(CallbackQuery callback)
+        {
+            Menu menu;
+            var sessionId = SessionIdFromCallbackData(callback.data);
+            var session = GetSessionById(sessionId);
+            if (session == null)
+            {
+                menu = new NoMatchingSessionMenu(sessionId);
+            }
+            else
+            {
+                menu = new DeleteSessionConfirmMenu(session);
+            }
+            return menu;
+        }
+        
+        private Menu DeleteSession(CallbackQuery callback)
+        {
+            Menu menu;
+            var sessionId = SessionIdFromCallbackData(callback.data);
+            var session = GetSessionById(sessionId);
+            if (session == null)
+            {
+                menu = new NoMatchingSessionMenu(sessionId);
+            }
+            else
+            {
+                _sessions.Remove(session);
+                menu = new DeleteSessionConfirmedMenu();
+            }
+            return menu;
+        }
+        
         private int NextSessionId()
         {
             if (!_sessions.Any())
