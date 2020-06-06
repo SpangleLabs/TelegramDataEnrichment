@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -43,6 +43,9 @@ namespace TelegramDataEnrichment
                     _partialSession = new PartialSession();
                     menu = new CreateSessionMenu();
                     break;
+                case DeleteSessionMenu.CallBackName:
+                    menu = new DeleteSessionMenu(_sessions);
+                    break;
                 default:
                     menu = new UnknownMenu(callback.data);
                     break;
@@ -55,6 +58,33 @@ namespace TelegramDataEnrichment
             if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
             {
                 menu = StopSession(callback.data);
+            }
+            if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
+            {
+                var sessionId = SessionIdFromCallbackData(callback.data);
+                var session = GetSessionById(sessionId);
+                if (session == null)
+                {
+                    menu = new NoMatchingSessionMenu(sessionId);
+                }
+                else
+                {
+                    menu = new DeleteSessionConfirmMenu(session);
+                }
+            }
+            if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
+            {
+                var sessionId = SessionIdFromCallbackData(callback.data);
+                var session = GetSessionById(sessionId);
+                if (session == null)
+                {
+                    menu = new NoMatchingSessionMenu(sessionId);
+                }
+                else
+                {
+                    _sessions.Remove(session);
+                    menu = new DeleteSessionConfirmedMenu();
+                }
             }
             menu.EditMessage(
                 callback.message.chat.id, 
@@ -105,29 +135,33 @@ namespace TelegramDataEnrichment
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
         }
+        
+        private EnrichmentSession GetSessionById(string sessionId)
+        {
+            return _sessions.FirstOrDefault(session => session.Id.ToString().Equals(sessionId));
+        }
+
+        private string SessionIdFromCallbackData(string callbackData)
+        {
+            return callbackData.Split(':')[1];
+        }
 
         private Menu StartSession(string callbackData)
         {
-            var sessionId = callbackData.Split(':')[1];
-            foreach (var session in _sessions.Where(session => session.Id.ToString().Equals(sessionId)))
-            {
-                session.Start();
-                return new SessionStartedMenu();
-            }
-
-            return new NoMatchingSessionMenu(sessionId);
+            var sessionId = SessionIdFromCallbackData(callbackData);
+            var session = GetSessionById(sessionId);
+            if (session == null) return new NoMatchingSessionMenu(sessionId);
+            session.Start();
+            return new SessionStartedMenu();
         }
 
         private Menu StopSession(string callbackData)
         {
-            var sessionId = callbackData.Split(':')[1];
-            foreach (var session in _sessions.Where(session => session.Id.ToString().Equals(sessionId)))
-            {
-                session.Stop();
-                return new SessionStoppedMenu();
-            }
-
-            return new NoMatchingSessionMenu(sessionId);
+            var sessionId = SessionIdFromCallbackData(callbackData);
+            var session = GetSessionById(sessionId);
+            if (session == null) return new NoMatchingSessionMenu(sessionId);
+            session.Stop();
+            return new SessionStoppedMenu();
         }
 
         private int NextSessionId()

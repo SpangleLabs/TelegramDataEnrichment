@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DreadBot;
 
 namespace TelegramDataEnrichment
@@ -72,7 +72,7 @@ namespace TelegramDataEnrichment
             keyboard.addCallbackButton("Create new session", CreateSessionMenu.CallbackName, 0);
             keyboard.addCallbackButton("Start session", StartSessionMenu.CallbackName, 1);
             keyboard.addCallbackButton("End session", StopSessionMenu.CallbackName, 2);
-            keyboard.addCallbackButton("Delete session", "session_delete", 3);
+            keyboard.addCallbackButton("Delete session", DeleteSessionMenu.CallBackName, 3);
             return keyboard;
         }
     }
@@ -202,6 +202,7 @@ namespace TelegramDataEnrichment
             {
                 keyboard.addCallbackButton(session.Name, $"{CallbackName}:{session.Id}", row++);
             }
+
             keyboard.addCallbackButton("🔙", RootMenu.CallbackName, row);
             return keyboard;
         }
@@ -212,6 +213,79 @@ namespace TelegramDataEnrichment
         protected override string Text()
         {
             return "Session ended.";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, 0);
+            return keyboard;
+        }
+    }
+
+    internal class DeleteSessionMenu : Menu
+    {
+        private readonly List<EnrichmentSession> _sessions;
+        public const string CallBackName = "session_delete";
+
+        public DeleteSessionMenu(List<EnrichmentSession> sessions)
+        {
+            _sessions = sessions;
+        }
+
+        protected override string Text()
+        {
+            return "Which session did you want to delete?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            var row = 0;
+            foreach (var session in _sessions)
+            {
+                keyboard.addCallbackButton(session.Name, $"{CallBackName}:{session.Id}", row++);
+            }
+
+            keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, row);
+            return keyboard;
+        }
+    }
+
+    internal class DeleteSessionConfirmMenu : Menu
+    {
+        private readonly EnrichmentSession _session;
+
+        public DeleteSessionConfirmMenu(EnrichmentSession session)
+        {
+            _session = session;
+        }
+
+        protected override string Text()
+        {
+            return "Are you sure you want to delete this session?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton(
+                "Yes, delete the session.",
+                $"{DeleteSessionConfirmedMenu.CallbackName}:{_session.Id}",
+                0
+            );
+            keyboard.addCallbackButton("No, go back to menu 🔙", RootMenu.CallbackName, 1);
+            return keyboard;
+        }
+    }
+
+    internal class DeleteSessionConfirmedMenu : Menu
+    {
+        public const string CallbackName = "session_delete_conf";
+
+        protected override string Text()
+        {
+            return "Deleted session.";
         }
 
         protected override InlineKeyboardMarkup Keyboard()
