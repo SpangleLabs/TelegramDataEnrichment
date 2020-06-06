@@ -24,7 +24,7 @@ namespace TelegramDataEnrichment
                 case SessionParts.Name:
                     return new CreateSessionMenu();
                 case SessionParts.Done:
-                    return new SessionCreatedMenu();
+                    return null;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -94,9 +94,13 @@ namespace TelegramDataEnrichment
                 {
                     var newSession = _partialSession.BuildSession(NextSessionId());
                     _sessions.Add(newSession);
+                    menu = new SessionCreatedMenu(newSession);
+                    _partialSession = null;
                 }
-
-                menu = _partialSession.NextMenu();
+                else
+                {
+                    menu = _partialSession.NextMenu();
+                }
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);

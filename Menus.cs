@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using DreadBot;
 
 namespace TelegramDataEnrichment
@@ -124,9 +124,15 @@ namespace TelegramDataEnrichment
 
     internal class SessionCreatedMenu : Menu
     {
+        private readonly EnrichmentSession _newSession;
+
+        public SessionCreatedMenu(EnrichmentSession newSession)
+        {
+            _newSession = newSession;
+        }
         protected override string Text()
         {
-            return "New session has been created: "; // TODO: add new session info
+            return $"New session has been created: {_newSession.Name}";
         }
 
         protected override InlineKeyboardMarkup Keyboard()
