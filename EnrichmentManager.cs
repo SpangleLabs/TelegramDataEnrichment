@@ -7,12 +7,13 @@ namespace TelegramDataEnrichment
 {
     public class EnrichmentManager
     {
-        private readonly List<EnrichmentSession> _sessions = new List<EnrichmentSession>();
+        private readonly List<EnrichmentSession> _sessions;
         private PartialSession _partialSession;
 
         public EnrichmentManager()
         {
             Logger.LogWarn("Created enrichment manager");
+            _sessions = new List<EnrichmentSession>(); // TODO: Load from config
             _partialSession = null; // TODO: Load from config
         }
 
@@ -22,10 +23,11 @@ namespace TelegramDataEnrichment
             Logger.LogDebug($"Callback handler: {callback.data}");
             if (!Utilities.isBotOwner(callback.from))
             {
-                Methods.sendReply(callback.message.chat.id, callback.message.message_id, "Sorry this bot is not available for general use.");
+                Methods.sendReply(callback.message.chat.id, callback.message.message_id,
+                    "Sorry this bot is not available for general use.");
                 return;
             }
-            
+
             Methods.answerCallbackQuery(callback.id);
             Menu menu;
             switch (callback.data)
@@ -55,20 +57,21 @@ namespace TelegramDataEnrichment
             {
                 menu = StartSession(callback.data);
             }
-            if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
+            else if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
             {
                 menu = StopSession(callback.data);
             }
-            if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
+            else if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
             {
                 menu = ConfirmDeleteSession(callback);
             }
-            if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
+            else if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
             {
                 menu = DeleteSession(callback);
             }
+
             menu.EditMessage(
-                callback.message.chat.id, 
+                callback.message.chat.id,
                 callback.message.message_id
             );
         }
@@ -96,7 +99,7 @@ namespace TelegramDataEnrichment
 
             if (menu == null && _partialSession == null)
             {
-                    menu = new UnknownMenu(eventArgs.msg.text);
+                menu = new UnknownMenu(eventArgs.msg.text);
             }
 
             if (_partialSession != null && _partialSession.WaitingForText())
@@ -117,7 +120,7 @@ namespace TelegramDataEnrichment
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
         }
-        
+
         private EnrichmentSession GetSessionById(string sessionId)
         {
             return _sessions.FirstOrDefault(session => session.Id.ToString().Equals(sessionId));
@@ -159,9 +162,10 @@ namespace TelegramDataEnrichment
             {
                 menu = new DeleteSessionConfirmMenu(session);
             }
+
             return menu;
         }
-        
+
         private Menu DeleteSession(CallbackQuery callback)
         {
             Menu menu;
@@ -176,15 +180,17 @@ namespace TelegramDataEnrichment
                 _sessions.Remove(session);
                 menu = new DeleteSessionConfirmedMenu();
             }
+
             return menu;
         }
-        
+
         private int NextSessionId()
         {
             if (!_sessions.Any())
             {
                 return 0;
             }
+
             var currentIds = _sessions.Select(x => x.Id);
             var takenIds = new BitArray(_sessions.Count, false);
             foreach (var id in currentIds)

@@ -16,7 +16,6 @@ namespace TelegramDataEnrichment
 
         public void PostInit()
         {
-            
         }
     }
 }

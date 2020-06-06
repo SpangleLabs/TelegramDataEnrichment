@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 
 namespace TelegramDataEnrichment
 {
@@ -10,6 +9,7 @@ namespace TelegramDataEnrichment
             Name,
             Done
         }
+
         private string Name { get; set; }
 
         public SessionParts NextPart()
@@ -29,6 +29,7 @@ namespace TelegramDataEnrichment
                     throw new ArgumentOutOfRangeException();
             }
         }
+
         public bool WaitingForText()
         {
             return NextPart() == SessionParts.Name;

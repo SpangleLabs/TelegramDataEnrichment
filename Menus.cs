@@ -130,6 +130,7 @@ namespace TelegramDataEnrichment
         {
             _newSession = newSession;
         }
+
         protected override string Text()
         {
             return $"New session has been created: {_newSession.Name}";
