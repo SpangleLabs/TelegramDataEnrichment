@@ -14,22 +14,31 @@ namespace TelegramDataEnrichment
 
         public void HandleCallback(CallbackEventArgs eventArgs)
         {
-            Logger.LogWarn($"Callback handler not implemented. Args: {eventArgs}");
+            Logger.LogDebug($"Callback handler: {eventArgs.callbackQuery.data}");
             if (!Utilities.isBotOwner(eventArgs.callbackQuery.from))
             {
                 Methods.sendReply(eventArgs.callbackQuery.message.chat.id, eventArgs.callbackQuery.message.message_id, "Sorry this bot is not available for general use.");
                 return;
             }
-
-            if (eventArgs.callbackQuery.data == "session_start")
-            {
-                Methods.answerCallbackQuery(eventArgs.callbackQuery.id);
-                this.StartSessionMenu(eventArgs.callbackQuery);
-                return;
-            }
-
+            
             Methods.answerCallbackQuery(eventArgs.callbackQuery.id);
-            Methods.sendMessage(eventArgs.callbackQuery.message.chat.id, $"I do not understand this callback data yet: {eventArgs.callbackQuery.data}");
+            Menu menu;
+            switch (eventArgs.callbackQuery.data)
+            {
+                case StartSessionMenu.CallbackName:
+                    menu = new StartSessionMenu(_sessions);
+                    break;
+                case RootMenu.CallbackName:
+                    menu = new RootMenu(_sessions);
+                    break;
+                default:
+                    menu = new UnknownMenu(eventArgs.callbackQuery.data);
+                    break;
+            }
+            menu.EditMessage(
+                eventArgs.callbackQuery.message.chat.id, 
+                eventArgs.callbackQuery.message.message_id
+            );
         }
 
         public void HandleText(MessageEventArgs eventArgs)
@@ -41,52 +50,121 @@ namespace TelegramDataEnrichment
                 return;
             }
 
-            if (eventArgs.msg.text == "/menu")
+            Menu menu;
+            switch (eventArgs.msg.text)
             {
-                SendRootMenu(eventArgs.msg);
+                case "/menu":
+                {
+                    menu = new RootMenu(_sessions);
+                    break;
+                }
+                case "/session_start":
+                {
+                    menu = new StartSessionMenu(_sessions);
+                    break;
+                }
+                default:
+                {
+                    menu = new UnknownMenu(eventArgs.msg.text);
+                    break;
+                }
+            } 
+            menu.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+        }
+
+        private abstract class Menu
+        {
+            protected abstract string Text();
+            protected abstract InlineKeyboardMarkup Keyboard();
+
+            public void SendReply(long chatId, long messageId)
+            {
+                Methods.sendReply(chatId, messageId, Text(), keyboard: Keyboard());
+            }
+
+            public void EditMessage(long chatId, long messageId)
+            {
+                Methods.editMessageText(chatId, messageId, Text(), keyboard: Keyboard());
             }
         }
 
-        private void SendRootMenu(Message msg)
+        private class UnknownMenu : Menu
         {
-            var activeSessions = _sessions.FindAll(s => s.IsActive).Count;
-            var keyboard = new InlineKeyboardMarkup();
-            keyboard.addCallbackButton("Create new session", "session_create", 0);
-            keyboard.addCallbackButton("Start session", "session_start", 1);
-            keyboard.addCallbackButton("End session", "session_end", 2);
-            keyboard.addCallbackButton("Delete session", "session_delete", 3);
-            Methods.sendReply(
-                msg.chat.id,
-                msg.message_id,
-                $"Welcome to the enrichment system menu. There are {_sessions.Count} configured sessions, and {activeSessions} are active.",
-                keyboard: keyboard
-            );
-        }
+            private readonly string _callbackData;
 
-        private void StartSessionMenu(CallbackQuery callback)
-        {
-            var inActiveSessions = _sessions.FindAll(s => !s.IsActive);
-            var keyboard = new InlineKeyboardMarkup();
-            var row = 0;
-            foreach (var session in inActiveSessions)
+            public UnknownMenu(string callbackData)
             {
-                keyboard.addCallbackButton(session.Name, $"session_start {session.Name}", row++);
+                _callbackData = callbackData;
             }
-            keyboard.addCallbackButton("🔙", "menu", row);
+            
+            protected override string Text()
+            {
+                return $"I do not understand this callback data yet: {_callbackData}";
+            }
 
-            Methods.editMessageText(
-                callback.from.id,
-                callback.message.message_id,
-                "Which enrichment session would you like to start?",
-                keyboard: BackOnly("menu")
-            );
+            protected override InlineKeyboardMarkup Keyboard()
+            {
+                var keyboard = new InlineKeyboardMarkup();
+                keyboard.addCallbackButton("🔙", RootMenu.CallbackName, 0);
+                return keyboard;
+            }
         }
 
-        private static InlineKeyboardMarkup BackOnly(string callbackData)
+        private class RootMenu : Menu
         {
-            var keyboard = new InlineKeyboardMarkup();
-            keyboard.addCallbackButton("🔙", callbackData, 0);
-            return keyboard;
+            private readonly List<EnrichmentSession> _sessions;
+            public const string CallbackName = "menu";
+
+            public RootMenu(List<EnrichmentSession> sessions)
+            {
+                _sessions = sessions;
+            }
+
+            protected override string Text()
+            {
+                var activeSessions = _sessions.FindAll(s => s.IsActive).Count;
+                return "Welcome to the enrichment system menu. " +
+                       $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.";
+            }
+
+            protected override InlineKeyboardMarkup Keyboard()
+            {
+                var keyboard = new InlineKeyboardMarkup();
+                keyboard.addCallbackButton("Create new session", "session_create", 0);
+                keyboard.addCallbackButton("Start session", "session_start", 1);
+                keyboard.addCallbackButton("End session", "session_end", 2);
+                keyboard.addCallbackButton("Delete session", "session_delete", 3);
+                return keyboard;
+            }
+        }
+
+        private class StartSessionMenu : Menu
+        {
+            private readonly List<EnrichmentSession> _sessions;
+            public const string CallbackName = "session_start";
+
+            public StartSessionMenu(List<EnrichmentSession> sessions)
+            {
+                _sessions = sessions;
+            }
+
+            protected override string Text()
+            {
+                return "Which enrichment session would you like to start?";
+            }
+
+            protected override InlineKeyboardMarkup Keyboard()
+            {
+                var inActiveSessions = _sessions.FindAll(s => !s.IsActive);
+                var keyboard = new InlineKeyboardMarkup();
+                var row = 0;
+                foreach (var session in inActiveSessions)
+                {
+                    keyboard.addCallbackButton(session.Name, $"session_start {session.Name}", row++);
+                }
+                keyboard.addCallbackButton("🔙", RootMenu.CallbackName, row);
+                return keyboard;
+            }
         }
     }
 }
