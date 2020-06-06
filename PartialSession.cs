@@ -10,7 +10,19 @@ namespace TelegramDataEnrichment
             Done
         }
 
+        public readonly int Id = 1;
         private string Name { get; set; }
+
+        public PartialSession()
+        {
+            
+        }
+
+        public PartialSession(PartialData data)
+        {
+            Id = data.Id;
+            Name = data.Name;
+        }
 
         public SessionParts NextPart()
         {
@@ -46,6 +58,21 @@ namespace TelegramDataEnrichment
         public EnrichmentSession BuildSession(int nextId)
         {
             return new EnrichmentSession(nextId, Name);
+        }
+
+        public PartialData ToData()
+        {
+            return new PartialData
+            {
+                Id = Id, 
+                Name = Name
+            };
+        }
+
+        public class PartialData
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
         }
     }
 }

@@ -13,6 +13,13 @@
             IsActive = false;
         }
 
+        public EnrichmentSession(SessionData data)
+        {
+            Id = data.Id;
+            Name = data.Name;
+            IsActive = data.IsActive;
+        }
+
         public void Start()
         {
             IsActive = true;
@@ -21,6 +28,23 @@
         public void Stop()
         {
             IsActive = false;
+        }
+
+        public SessionData ToData()
+        {
+            return new SessionData
+            {
+                Id = Id, 
+                Name = Name, 
+                IsActive = IsActive
+            };
+        }
+
+        public class SessionData
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public bool IsActive { get; set; }
         }
     }
 }

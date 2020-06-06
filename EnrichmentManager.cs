@@ -7,14 +7,16 @@ namespace TelegramDataEnrichment
 {
     public class EnrichmentManager
     {
+        private EnrichmentDatabase _database;
         private readonly List<EnrichmentSession> _sessions;
         private PartialSession _partialSession;
 
-        public EnrichmentManager()
+        public EnrichmentManager(EnrichmentDatabase database)
         {
             Logger.LogWarn("Created enrichment manager");
-            _sessions = new List<EnrichmentSession>(); // TODO: Load from config
-            _partialSession = null; // TODO: Load from config
+            _database = database;
+            _sessions = database.ListSessions();
+            _partialSession = database.ListPartials().FirstOrDefault();
         }
 
         public void HandleCallback(CallbackEventArgs eventArgs)
@@ -43,6 +45,7 @@ namespace TelegramDataEnrichment
                     break;
                 case CreateSessionMenu.CallbackName:
                     _partialSession = new PartialSession();
+                    _database.SavePartial(_partialSession);
                     menu = new CreateSessionMenu();
                     break;
                 case DeleteSessionMenu.CallBackName:
@@ -75,8 +78,7 @@ namespace TelegramDataEnrichment
                 callback.message.message_id
             );
         }
-
-
+        
         public void HandleText(MessageEventArgs eventArgs)
         {
             var msg = eventArgs.msg;
@@ -105,11 +107,14 @@ namespace TelegramDataEnrichment
             if (_partialSession != null && _partialSession.WaitingForText())
             {
                 _partialSession.AddText(eventArgs.msg.text);
+                _database.SavePartial(_partialSession);
                 if (_partialSession.NextPart() == PartialSession.SessionParts.Done)
                 {
                     var newSession = _partialSession.BuildSession(NextSessionId());
                     _sessions.Add(newSession);
+                    _database.SaveSession(newSession);
                     menu = new SessionCreatedMenu(newSession);
+                    _database.RemovePartial(_partialSession);
                     _partialSession = null;
                 }
                 else
@@ -137,6 +142,7 @@ namespace TelegramDataEnrichment
             var session = GetSessionById(sessionId);
             if (session == null) return new NoMatchingSessionMenu(sessionId);
             session.Start();
+            _database.SaveSession(session);
             return new SessionStartedMenu();
         }
 
@@ -146,6 +152,7 @@ namespace TelegramDataEnrichment
             var session = GetSessionById(sessionId);
             if (session == null) return new NoMatchingSessionMenu(sessionId);
             session.Stop();
+            _database.SaveSession(session);
             return new SessionStoppedMenu();
         }
 
@@ -178,6 +185,7 @@ namespace TelegramDataEnrichment
             else
             {
                 _sessions.Remove(session);
+                _database.RemoveSession(session);
                 menu = new DeleteSessionConfirmedMenu();
             }
 
@@ -198,12 +206,12 @@ namespace TelegramDataEnrichment
                 if (id < _sessions.Count) takenIds[id] = true;
             }
 
-            for (var i = 0; i < _sessions.Count; i++)
+            for (var i = 1; i < _sessions.Count; i++)
             {
                 if (takenIds[i] == false) return i;
             }
 
-            return _sessions.Count;
+            return _sessions.Count + 1;
         }
     }
 }

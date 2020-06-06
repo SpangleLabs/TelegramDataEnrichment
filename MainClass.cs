@@ -9,7 +9,8 @@ namespace TelegramDataEnrichment
 
         public void Init()
         {
-            var manager = new EnrichmentManager();
+            var database = new EnrichmentDatabase();
+            var manager = new EnrichmentManager(database);
             Events.CallbackEvent += manager.HandleCallback;
             Events.TextEvent += manager.HandleText;
         }
