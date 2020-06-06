@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using DreadBot;
 
 namespace TelegramDataEnrichment
@@ -77,7 +79,7 @@ namespace TelegramDataEnrichment
                 _partialSession.AddText(eventArgs.msg.text);
                 if (_partialSession.NextPart() == PartialSession.SessionParts.Done)
                 {
-                    var newSession = _partialSession.BuildSession("example_id");
+                    var newSession = _partialSession.BuildSession(NextSessionId());
                     _sessions.Add(newSession);
                 }
 
@@ -85,6 +87,27 @@ namespace TelegramDataEnrichment
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+        }
+
+        private int NextSessionId()
+        {
+            if (!_sessions.Any())
+            {
+                return 0;
+            }
+            var currentIds = _sessions.Select(x => x.Id);
+            var takenIds = new BitArray(_sessions.Count, false);
+            foreach (var id in currentIds)
+            {
+                if (id < _sessions.Count) takenIds[id] = true;
+            }
+
+            for (var i = 0; i < _sessions.Count; i++)
+            {
+                if (takenIds[i] == false) return i;
+            }
+
+            return _sessions.Count;
         }
     }
 }

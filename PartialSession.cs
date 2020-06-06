@@ -42,7 +42,7 @@ namespace TelegramDataEnrichment
             }
         }
 
-        public EnrichmentSession BuildSession(string nextId)
+        public EnrichmentSession BuildSession(int nextId)
         {
             return new EnrichmentSession(nextId, Name);
         }
