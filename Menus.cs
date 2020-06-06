@@ -3,7 +3,7 @@ using DreadBot;
 
 namespace TelegramDataEnrichment
 {
-    internal abstract class Menu
+    public abstract class Menu
         {
             protected abstract string Text();
             protected abstract InlineKeyboardMarkup Keyboard();
@@ -44,25 +44,32 @@ namespace TelegramDataEnrichment
     internal class RootMenu : Menu
         {
             private readonly List<EnrichmentSession> _sessions;
+            private readonly bool _creationInProgress;
             public const string CallbackName = "menu";
 
-            public RootMenu(List<EnrichmentSession> sessions)
+            public RootMenu(List<EnrichmentSession> sessions, bool creationInProgress)
             {
                 _sessions = sessions;
+                _creationInProgress = creationInProgress;
             }
 
             protected override string Text()
             {
                 var activeSessions = _sessions.FindAll(s => s.IsActive).Count;
-                return "Welcome to the enrichment system menu. " +
-                       $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.";
+                var text = "Welcome to the enrichment system menu.\n";
+                if (_creationInProgress)
+                {
+                    text += "Cancelled session creation.\n";
+                }
+                text += $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.";
+                return text;
             }
 
             protected override InlineKeyboardMarkup Keyboard()
             {
                 var keyboard = new InlineKeyboardMarkup();
-                keyboard.addCallbackButton("Create new session", "session_create", 0);
-                keyboard.addCallbackButton("Start session", "session_start", 1);
+                keyboard.addCallbackButton("Create new session", CreateSessionMenu.CallbackName, 0);
+                keyboard.addCallbackButton("Start session", StartSessionMenu.CallbackName, 1);
                 keyboard.addCallbackButton("End session", "session_end", 2);
                 keyboard.addCallbackButton("Delete session", "session_delete", 3);
                 return keyboard;
@@ -91,10 +98,37 @@ namespace TelegramDataEnrichment
                 var row = 0;
                 foreach (var session in inActiveSessions)
                 {
-                    keyboard.addCallbackButton(session.Name, $"session_start {session.Name}", row++);
+                    keyboard.addCallbackButton(session.Name, $"session_start {session.Id}", row++);
                 }
                 keyboard.addCallbackButton("🔙", RootMenu.CallbackName, row);
                 return keyboard;
             }
         }
+
+    internal class CreateSessionMenu : Menu
+    {
+        public const string CallbackName = "session_create";
+        protected override string Text()
+        {
+            return "Creating a new session.\nWhat would you like to name the session?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
+        }
+    }
+
+    internal class SessionCreatedMenu : Menu
+    {
+        protected override string Text()
+        {
+            return "New session has been created: "; // TODO: add new session info
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
+        }
+    }
 }

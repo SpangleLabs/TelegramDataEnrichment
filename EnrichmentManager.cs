@@ -1,15 +1,17 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DreadBot;
 
 namespace TelegramDataEnrichment
 {
     public class EnrichmentManager
     {
-        private List<EnrichmentSession> _sessions = new List<EnrichmentSession>();
+        private readonly List<EnrichmentSession> _sessions = new List<EnrichmentSession>();
+        private PartialSession _partialSession;
 
         public EnrichmentManager()
         {
             Logger.LogWarn("Created enrichment manager");
+            _partialSession = null; // TODO: Load from config
         }
 
         public void HandleCallback(CallbackEventArgs eventArgs)
@@ -25,11 +27,15 @@ namespace TelegramDataEnrichment
             Menu menu;
             switch (eventArgs.callbackQuery.data)
             {
+                case RootMenu.CallbackName:
+                    menu = new RootMenu(_sessions, _partialSession != null);
+                    break;
                 case StartSessionMenu.CallbackName:
                     menu = new StartSessionMenu(_sessions);
                     break;
-                case RootMenu.CallbackName:
-                    menu = new RootMenu(_sessions);
+                case CreateSessionMenu.CallbackName:
+                    _partialSession = new PartialSession();
+                    menu = new CreateSessionMenu();
                     break;
                 default:
                     menu = new UnknownMenu(eventArgs.callbackQuery.data);
@@ -50,26 +56,35 @@ namespace TelegramDataEnrichment
                 return;
             }
 
-            Menu menu;
+            Menu menu = null;
             switch (eventArgs.msg.text)
             {
                 case "/menu":
                 {
-                    menu = new RootMenu(_sessions);
+                    menu = new RootMenu(_sessions, _partialSession != null);
+                    _partialSession = null;
                     break;
                 }
-                case "/session_start":
-                {
-                    menu = new StartSessionMenu(_sessions);
-                    break;
-                }
-                default:
-                {
+            }
+
+            if (menu == null && _partialSession == null)
+            {
                     menu = new UnknownMenu(eventArgs.msg.text);
-                    break;
+            }
+
+            if (_partialSession != null && _partialSession.WaitingForText())
+            {
+                _partialSession.AddText(eventArgs.msg.text);
+                if (_partialSession.NextPart() == PartialSession.SessionParts.Done)
+                {
+                    var newSession = _partialSession.BuildSession("example_id");
+                    _sessions.Add(newSession);
                 }
-            } 
-            menu.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+
+                menu = _partialSession.NextMenu();
+            }
+
+            menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
         }
     }
 }
