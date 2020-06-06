@@ -128,6 +128,8 @@ namespace TelegramDataEnrichment
 
         protected override InlineKeyboardMarkup Keyboard()
         {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, 0);
             return null;
         }
     }
