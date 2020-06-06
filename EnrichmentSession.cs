@@ -2,7 +2,7 @@
 {
     public class EnrichmentSession
     {
-        public bool IsActive { get; set; }
+        public bool IsActive { get; private set; }
         public string Name { get; }
         public int Id { get;  }
 
@@ -11,6 +11,11 @@
             Id = id; 
             Name = name;  // User friendly name
             IsActive = false;
+        }
+
+        public void Start()
+        {
+            IsActive = true;
         }
     }
 }

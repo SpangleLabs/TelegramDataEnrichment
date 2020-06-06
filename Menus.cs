@@ -98,7 +98,7 @@ namespace TelegramDataEnrichment
                 var row = 0;
                 foreach (var session in inActiveSessions)
                 {
-                    keyboard.addCallbackButton(session.Name, $"session_start {session.Id}", row++);
+                    keyboard.addCallbackButton(session.Name, $"session_start:{session.Id}", row++);
                 }
                 keyboard.addCallbackButton("🔙", RootMenu.CallbackName, row);
                 return keyboard;
@@ -130,7 +130,41 @@ namespace TelegramDataEnrichment
         {
             var keyboard = new InlineKeyboardMarkup();
             keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, 0);
+            return keyboard;
+        }
+    }
+
+    internal class SessionStartedMenu : Menu
+    {
+        protected override string Text()
+        {
+            return "Session started.";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
             return null;
+        }
+    }
+    
+    internal class NoMatchingSessionMenu : Menu
+    {
+        private readonly string _sessionId;
+
+        public NoMatchingSessionMenu(string sessionId)
+        {
+            _sessionId = sessionId;
+        }
+        protected override string Text()
+        {
+            return $"No session matching the id: {_sessionId}";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, 0);
+            return keyboard;
         }
     }
 }

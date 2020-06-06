@@ -18,16 +18,17 @@ namespace TelegramDataEnrichment
 
         public void HandleCallback(CallbackEventArgs eventArgs)
         {
-            Logger.LogDebug($"Callback handler: {eventArgs.callbackQuery.data}");
-            if (!Utilities.isBotOwner(eventArgs.callbackQuery.from))
+            var callback = eventArgs.callbackQuery;
+            Logger.LogDebug($"Callback handler: {callback.data}");
+            if (!Utilities.isBotOwner(callback.from))
             {
-                Methods.sendReply(eventArgs.callbackQuery.message.chat.id, eventArgs.callbackQuery.message.message_id, "Sorry this bot is not available for general use.");
+                Methods.sendReply(callback.message.chat.id, callback.message.message_id, "Sorry this bot is not available for general use.");
                 return;
             }
             
-            Methods.answerCallbackQuery(eventArgs.callbackQuery.id);
+            Methods.answerCallbackQuery(callback.id);
             Menu menu;
-            switch (eventArgs.callbackQuery.data)
+            switch (callback.data)
             {
                 case RootMenu.CallbackName:
                     menu = new RootMenu(_sessions, _partialSession != null);
@@ -40,12 +41,17 @@ namespace TelegramDataEnrichment
                     menu = new CreateSessionMenu();
                     break;
                 default:
-                    menu = new UnknownMenu(eventArgs.callbackQuery.data);
+                    menu = new UnknownMenu(callback.data);
                     break;
             }
+
+            if (callback.data.StartsWith(StartSessionMenu.CallbackName + ":"))
+            {
+                menu = StartSession(callback.data);
+            }
             menu.EditMessage(
-                eventArgs.callbackQuery.message.chat.id, 
-                eventArgs.callbackQuery.message.message_id
+                callback.message.chat.id, 
+                callback.message.message_id
             );
         }
 
@@ -87,6 +93,18 @@ namespace TelegramDataEnrichment
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+        }
+
+        private Menu StartSession(string callbackData)
+        {
+            var sessionId = callbackData.Split(':')[1];
+            foreach (var session in _sessions.Where(session => session.Id.ToString().Equals(sessionId)))
+            {
+                session.Start();
+                return new SessionStartedMenu();
+            }
+
+            return new NoMatchingSessionMenu(sessionId);
         }
 
         private int NextSessionId()
