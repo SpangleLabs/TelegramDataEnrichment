@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TelegramDataEnrichment
+namespace TelegramDataEnrichment.Sessions
 {
     public class PartialSession
     {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
+using TelegramDataEnrichment.Sessions;
 
 namespace TelegramDataEnrichment
 {

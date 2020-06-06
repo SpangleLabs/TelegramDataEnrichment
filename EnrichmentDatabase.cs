@@ -2,6 +2,7 @@
 using System.Linq;
 using DreadBot;
 using LiteDB;
+using TelegramDataEnrichment.Sessions;
 using Logger = DreadBot.Logger;
 
 namespace TelegramDataEnrichment

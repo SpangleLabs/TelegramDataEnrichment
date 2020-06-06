@@ -1,4 +1,4 @@
-﻿namespace TelegramDataEnrichment
+﻿namespace TelegramDataEnrichment.Sessions
 {
     public class EnrichmentSession
     {
