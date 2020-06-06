@@ -36,6 +36,9 @@ namespace TelegramDataEnrichment
                 case StartSessionMenu.CallbackName:
                     menu = new StartSessionMenu(_sessions);
                     break;
+                case StopSessionMenu.CallbackName:
+                    menu = new StopSessionMenu(_sessions);
+                    break;
                 case CreateSessionMenu.CallbackName:
                     _partialSession = new PartialSession();
                     menu = new CreateSessionMenu();
@@ -48,6 +51,10 @@ namespace TelegramDataEnrichment
             if (callback.data.StartsWith(StartSessionMenu.CallbackName + ":"))
             {
                 menu = StartSession(callback.data);
+            }
+            if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
+            {
+                menu = StopSession(callback.data);
             }
             menu.EditMessage(
                 callback.message.chat.id, 
@@ -102,6 +109,18 @@ namespace TelegramDataEnrichment
             {
                 session.Start();
                 return new SessionStartedMenu();
+            }
+
+            return new NoMatchingSessionMenu(sessionId);
+        }
+
+        private Menu StopSession(string callbackData)
+        {
+            var sessionId = callbackData.Split(':')[1];
+            foreach (var session in _sessions.Where(session => session.Id.ToString().Equals(sessionId)))
+            {
+                session.Stop();
+                return new SessionStoppedMenu();
             }
 
             return new NoMatchingSessionMenu(sessionId);

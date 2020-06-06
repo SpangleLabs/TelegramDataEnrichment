@@ -17,5 +17,10 @@
         {
             IsActive = true;
         }
+
+        public void Stop()
+        {
+            IsActive = false;
+        }
     }
 }
