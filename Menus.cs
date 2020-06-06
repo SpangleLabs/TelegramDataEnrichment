@@ -263,7 +263,7 @@ namespace TelegramDataEnrichment
 
         protected override string Text()
         {
-            return "Are you sure you want to delete this session?";
+            return $"Are you sure you want to delete the session: {_session.Name}?";
         }
 
         protected override InlineKeyboardMarkup Keyboard()
