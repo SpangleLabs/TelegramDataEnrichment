@@ -98,7 +98,7 @@ namespace TelegramDataEnrichment
                 var row = 0;
                 foreach (var session in inActiveSessions)
                 {
-                    keyboard.addCallbackButton(session.Name, $"session_start:{session.Id}", row++);
+                    keyboard.addCallbackButton(session.Name, $"{CallbackName}:{session.Id}", row++);
                 }
                 keyboard.addCallbackButton("🔙", RootMenu.CallbackName, row);
                 return keyboard;
