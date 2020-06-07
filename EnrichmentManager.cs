@@ -32,7 +32,7 @@ namespace TelegramDataEnrichment
             }
 
             Methods.answerCallbackQuery(callback.id);
-            Menu menu;
+            Menu menu = null;
             switch (callback.data)
             {
                 case RootMenu.CallbackName:
@@ -51,9 +51,6 @@ namespace TelegramDataEnrichment
                     break;
                 case DeleteSessionMenu.CallBackName:
                     menu = new DeleteSessionMenu(_sessions);
-                    break;
-                default:
-                    menu = new UnknownMenu(callback.data);
                     break;
             }
 
@@ -74,7 +71,7 @@ namespace TelegramDataEnrichment
                 menu = DeleteSession(callback);
             }
 
-            if (_partialSession != null && _partialSession.WaitingForCallback())
+            if (menu == null && _partialSession != null && _partialSession.WaitingForCallback())
             {
                 _partialSession.AddCallback(callback.data);
                 _database.SavePartial(_partialSession);

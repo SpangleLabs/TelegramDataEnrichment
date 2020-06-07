@@ -8,32 +8,46 @@ namespace TelegramDataEnrichment.Sessions
         {
             Name,
             BatchCount,
+            DataSource,
             Done
         }
 
         public readonly int Id = 1;
-        private string Name { get; set; }
-        private int? BatchCount { get; set; }
+        private string _name;
+        private int? _batchCount;
+        private readonly PartialSource _dataSource;
 
         public PartialSession()
         {
+            _dataSource = new PartialSource();
         }
 
         public PartialSession(PartialData data)
         {
             Id = data.Id;
-            Name = data.Name;
-            BatchCount = data.BatchCount;
+            _name = data.Name;
+            _batchCount = data.BatchCount;
+            _dataSource = new PartialSource(data.DataSource);
         }
 
         public SessionParts NextPart()
         {
-            if (Name == null)
+            if (_name == null)
             {
                 return SessionParts.Name;
             }
 
-            return BatchCount == null ? SessionParts.BatchCount : SessionParts.Done;
+            if (_batchCount == null)
+            {
+                return SessionParts.BatchCount;
+            }
+
+            if (_dataSource.NextPart() != PartialSource.SourceParts.Done)
+            {
+                return SessionParts.DataSource;
+            }
+
+            return SessionParts.Done;
         }
 
         public Menu NextMenu()
@@ -44,6 +58,8 @@ namespace TelegramDataEnrichment.Sessions
                     return new CreateSessionMenu();
                 case SessionParts.BatchCount:
                     return new CreateSessionBatchSizeMenu();
+                case SessionParts.DataSource:
+                    return _dataSource.NextMenu();
                 case SessionParts.Done:
                     return null;
                 default:
@@ -53,20 +69,42 @@ namespace TelegramDataEnrichment.Sessions
 
         public bool WaitingForText()
         {
-            return NextPart() == SessionParts.Name;
+            switch (NextPart())
+            {
+                case SessionParts.Name:
+                    return true;
+                case SessionParts.DataSource:
+                    return _dataSource.WaitingForText();
+                default:
+                    return false;
+            }
         }
 
         public void AddText(string text)
         {
-            if (NextPart() == SessionParts.Name)
+            var nextPart = NextPart();
+            switch (nextPart)
             {
-                Name = text;
+                case SessionParts.Name:
+                    _name = text;
+                    break;
+                case SessionParts.DataSource:
+                    _dataSource.AddText(text);
+                    break;
             }
         }
 
         public bool WaitingForCallback()
         {
-            return NextPart() == SessionParts.BatchCount;
+            switch (NextPart())
+            {
+                case SessionParts.BatchCount:
+                    return true;
+                case SessionParts.DataSource:
+                    return _dataSource.WaitingForCallback();
+                default:
+                    return false;
+            }
         }
 
         public void AddCallback(string callbackData)
@@ -77,18 +115,25 @@ namespace TelegramDataEnrichment.Sessions
             )
             {
                 var batchSize = callbackData.Split(':')[1];
-                BatchCount = int.Parse(batchSize);
+                _batchCount = int.Parse(batchSize);
+            }
+
+            if (NextPart() == SessionParts.DataSource)
+            {
+                _dataSource.AddCallback(callbackData);
             }
         }
 
         public EnrichmentSession BuildSession(int nextId)
         {
-            if (Name == null || BatchCount == null)
+            if (_name == null || _batchCount == null || _dataSource.NextPart() != PartialSource.SourceParts.Done)
             {
                 throw new ArgumentNullException();
             }
+            
+            var dataSource = _dataSource.BuildSource();
 
-            return new EnrichmentSession(nextId, Name, (int) BatchCount);
+            return new EnrichmentSession(nextId, _name, (int) _batchCount, dataSource);
         }
 
         public PartialData ToData()
@@ -96,8 +141,9 @@ namespace TelegramDataEnrichment.Sessions
             return new PartialData
             {
                 Id = Id,
-                Name = Name,
-                BatchCount = BatchCount
+                Name = _name,
+                BatchCount = _batchCount,
+                DataSource = _dataSource.ToData()
             };
         }
 
@@ -106,6 +152,7 @@ namespace TelegramDataEnrichment.Sessions
             public int Id { get; set; }
             public string Name { get; set; }
             public int? BatchCount { get; set; }
+            public PartialSource.PartialData DataSource { get; set; }
         }
     }
 }
