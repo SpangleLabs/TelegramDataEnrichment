@@ -7,14 +7,16 @@
         public int Id { get; }
         private readonly int _batchCount;
         private readonly DataSource _dataSource;
+        private readonly bool _isRandomOrder;
 
-        public EnrichmentSession(int id, string name, int batchCount, DataSource dataSource)
+        public EnrichmentSession(int id, string name, int batchCount, DataSource dataSource, bool isRandomOrder)
         {
             Id = id;
             Name = name; // User friendly name
             IsActive = false;
             _batchCount = batchCount;  // How many to post at once
             _dataSource = dataSource;
+            _isRandomOrder = isRandomOrder;
         }
 
         public EnrichmentSession(SessionData data)
@@ -24,6 +26,7 @@
             IsActive = data.IsActive;
             _batchCount = data.BatchCount;
             _dataSource = DataSource.FromData(data.DataSource);
+            _isRandomOrder = data.IsRandomOrder;
         }
 
         public void Start()
@@ -44,7 +47,8 @@
                 Name = Name, 
                 IsActive = IsActive,
                 BatchCount = _batchCount,
-                DataSource = _dataSource.ToData()
+                DataSource = _dataSource.ToData(),
+                IsRandomOrder = _isRandomOrder
             };
         }
 
@@ -56,11 +60,11 @@
             // public List<long> messageIds { get; set; }
             public int BatchCount { get; set; }
             public DataSource.DataSourceData DataSource { get; set; }
-            // public bool isRandomOrder { get; set; }
-            // public List<string> options { get; set; }
-            // public bool isMultiOption { get; set; }
-            // public bool canManuallyInput { get; set; }
-            // public DataOutputData dataOutput { get; set; }
+            public bool IsRandomOrder { get; set; }
+            // public List<string> Options { get; set; }
+            // public bool IsMultiOption { get; set; }
+            // public bool CanManuallyInput { get; set; }
+            // public DataOutputData DataOutput { get; set; }
         }
     }
 }

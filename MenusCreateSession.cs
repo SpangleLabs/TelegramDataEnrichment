@@ -90,6 +90,24 @@ namespace TelegramDataEnrichment
             return keyboard;
         }
     }
+
+    internal class CreateSessionRandomOrder : Menu
+    {
+        public const string CallbackName = "session_s_rand_order";
+
+        protected override string Text()
+        {
+            return "Should this session present data in a random order, or in the order of the data source?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Original order", $"{CallbackName}:{false}", 0);
+            keyboard.addCallbackButton("Random order", $"{CallbackName}:{true}", 1);
+            return keyboard;
+        }
+    }
     
     internal class SessionCreatedMenu : Menu
     {
