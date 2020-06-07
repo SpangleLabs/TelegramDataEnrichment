@@ -8,7 +8,7 @@ namespace TelegramDataEnrichment
 {
     public class EnrichmentManager
     {
-        private EnrichmentDatabase _database;
+        private readonly EnrichmentDatabase _database;
         private readonly List<EnrichmentSession> _sessions;
         private PartialSession _partialSession;
 
@@ -74,6 +74,18 @@ namespace TelegramDataEnrichment
                 menu = DeleteSession(callback);
             }
 
+            if (_partialSession != null && _partialSession.WaitingForCallback())
+            {
+                _partialSession.AddCallback(callback.data);
+                _database.SavePartial(_partialSession);
+                menu = CheckPartialCompletionAndGetNextMenu();
+            }
+
+            if (menu == null)
+            {
+                menu = new UnknownMenu(callback.data);
+            }
+
             menu.EditMessage(
                 callback.message.chat.id,
                 callback.message.message_id
@@ -100,31 +112,25 @@ namespace TelegramDataEnrichment
                 }
             }
 
-            if (menu == null && _partialSession == null)
-            {
-                menu = new UnknownMenu(eventArgs.msg.text);
-            }
-
             if (_partialSession != null && _partialSession.WaitingForText())
             {
                 _partialSession.AddText(eventArgs.msg.text);
                 _database.SavePartial(_partialSession);
-                if (_partialSession.NextPart() == PartialSession.SessionParts.Done)
-                {
-                    var newSession = _partialSession.BuildSession(NextSessionId());
-                    _sessions.Add(newSession);
-                    _database.SaveSession(newSession);
-                    menu = new SessionCreatedMenu(newSession);
-                    _database.RemovePartial(_partialSession);
-                    _partialSession = null;
-                }
-                else
-                {
-                    menu = _partialSession.NextMenu();
-                }
+                menu = CheckPartialCompletionAndGetNextMenu();
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+        }
+
+        private Menu CheckPartialCompletionAndGetNextMenu()
+        {
+            if (_partialSession.NextPart() != PartialSession.SessionParts.Done) return _partialSession.NextMenu();
+            var newSession = _partialSession.BuildSession(NextSessionId());
+            _sessions.Add(newSession);
+            _database.SaveSession(newSession);
+            _database.RemovePartial(_partialSession);
+            _partialSession = null;
+            return new SessionCreatedMenu(newSession);
         }
 
         private EnrichmentSession GetSessionById(string sessionId)

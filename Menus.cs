@@ -123,6 +123,26 @@ namespace TelegramDataEnrichment
         }
     }
 
+    internal class CreateSessionBatchSizeMenu : Menu
+    {
+        public const string CallbackName = "session_c_batch";
+
+        protected override string Text()
+        {
+            return "How many data points should it post at once?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("1", $"{CallbackName}:1", 0);
+            keyboard.addCallbackButton("3", $"{CallbackName}:3", 0);
+            keyboard.addCallbackButton("5", $"{CallbackName}:5", 0);
+            keyboard.addCallbackButton("10", $"{CallbackName}:10", 0);
+            return keyboard;
+        }
+    }
+
     internal class SessionCreatedMenu : Menu
     {
         private readonly EnrichmentSession _newSession;
