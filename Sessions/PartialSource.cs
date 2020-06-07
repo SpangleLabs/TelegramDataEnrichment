@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace TelegramDataEnrichment.Sessions
 {
@@ -14,6 +15,7 @@ namespace TelegramDataEnrichment.Sessions
 
         private DataSourceTypes? _type;
         private string _directoryName;
+        private List<string> _listPotentialDirectories;
 
         public PartialSource()
         {
@@ -24,6 +26,11 @@ namespace TelegramDataEnrichment.Sessions
         {
             _type = data.Type;
             _directoryName = data.DirectoryName;
+        }
+
+        private List<string> ListPotentialDirectories()
+        {
+            return _listPotentialDirectories ?? (_listPotentialDirectories = DirectorySource.ListDirectories());
         }
         
         public SourceParts NextPart()
@@ -48,7 +55,7 @@ namespace TelegramDataEnrichment.Sessions
                 case null:
                     return new CreateSessionDataSourceTypeMenu();
                 case DataSourceTypes.DirectorySource when _directoryName == null:
-                    return new CreateSessionDataSourceDirectoryName(DirectorySource.ListDirectories());
+                    return new CreateSessionDataSourceDirectoryName(ListPotentialDirectories());
                 case DataSourceTypes.DirectorySource:
                     return null;
                 default:
@@ -95,7 +102,7 @@ namespace TelegramDataEnrichment.Sessions
             if (nextPart == SourceParts.DirectoryName)
             {
                 var dirNumber = int.Parse(callbackData.Split(':')[1]);
-                var directories = DirectorySource.ListDirectories();
+                var directories = ListPotentialDirectories();
                 _directoryName = directories[dirNumber];
             }
         }

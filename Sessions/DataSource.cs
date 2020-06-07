@@ -60,7 +60,7 @@ namespace TelegramDataEnrichment.Sessions
 
         private List<Datum> ParseDirectory()
         {
-            var files = Directory.GetFiles($"{BaseDirectory}/{_directory}");
+            var files = Directory.GetFiles(_directory);
             var data = new List<Datum>();
             var datumId = 0;
             foreach (var file in files)
