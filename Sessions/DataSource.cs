@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -65,21 +65,7 @@ namespace TelegramDataEnrichment.Sessions
             var datumId = 0;
             foreach (var file in files)
             {
-                var ext = Path.GetExtension(file);
-                switch (ext)
-                {
-                    case ".txt":
-                        data.Add(new TextDatum(file, datumId++, File.ReadAllText(file)));
-                        break;
-                    case ".png":
-                    case ".jpg":
-                    case ".jpeg":
-                        data.Add(new ImageDatum(file, datumId++, file));
-                        break;
-                    default:
-                        data.Add(new DocumentDatum(file, datumId++, file));
-                        break;
-                }
+                data.Add(Datum.FromFile(file, datumId++));
             }
 
             return data;

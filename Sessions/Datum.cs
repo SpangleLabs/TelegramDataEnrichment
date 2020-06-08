@@ -1,4 +1,9 @@
-﻿namespace TelegramDataEnrichment.Sessions
+using System.IO;
+using System.Net.Http;
+using DreadBot;
+using File = System.IO.File;
+
+namespace TelegramDataEnrichment.Sessions
 {
     public abstract class Datum
     {
@@ -6,7 +11,23 @@
         public int IdNumber;
         public long MessageId;
 
-        public abstract void Post();
+        public abstract void Post(long chatId, InlineKeyboardMarkup keyboard);
+
+        public static Datum FromFile(string fileName, int datumId)
+        {
+            var ext = Path.GetExtension(fileName).ToLower();
+            switch (ext)
+            {
+                case ".txt":
+                    return new TextDatum(fileName, datumId, File.ReadAllText(fileName));
+                case ".png":
+                case ".jpg":
+                case ".jpeg":
+                    return  new ImageDatum(fileName, datumId, fileName);
+                default:
+                    return new DocumentDatum(fileName, datumId, fileName);
+            }
+        }
     }
 
     public class TextDatum : Datum
@@ -20,7 +41,7 @@
             Text = text;
         }
 
-        public override void Post()
+        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
             throw new System.NotImplementedException();
         }
@@ -37,7 +58,7 @@
             ImagePath = imagePath;
         }
 
-        public override void Post()
+        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
             throw new System.NotImplementedException();
         }
@@ -54,7 +75,7 @@
             DocumentPath = documentPath;
         }
 
-        public override void Post()
+        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
             throw new System.NotImplementedException();
         }
