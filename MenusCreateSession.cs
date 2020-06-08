@@ -43,7 +43,7 @@ namespace TelegramDataEnrichment
     {
         public const string CallbackName = "session_c_source_type";
         public const string CallbackDirectorySource = "session_c_source_type:directory";
-        
+
         protected override string Text()
         {
             return "Select the type of data source to use for this enrichment session";
@@ -69,8 +69,8 @@ namespace TelegramDataEnrichment
 
         protected override string Text()
         {
-            return _directories.Count == 0 
-                ? "There are no valid input directories." 
+            return _directories.Count == 0
+                ? "There are no valid input directories."
                 : "Please select a directory to read data from:";
         }
 
@@ -82,11 +82,13 @@ namespace TelegramDataEnrichment
                 keyboard.addCallbackButton("Go back to menu 🔙", RootMenu.CallbackName, 0);
                 return keyboard;
             }
+
             var row = 0;
             foreach (var directory in _directories)
             {
                 keyboard.addCallbackButton(directory, $"{CallbackName}:{row}", row++);
             }
+
             return keyboard;
         }
     }
@@ -118,10 +120,11 @@ namespace TelegramDataEnrichment
         {
             _dataSourceType = dataSourceType;
         }
+
         protected override string Text()
         {
-            return _dataSourceType != DataSourceTypes.DirectorySource 
-                ? "There are no data output types available for this data source type." 
+            return _dataSourceType != DataSourceTypes.DirectorySource
+                ? "There are no data output types available for this data source type."
                 : "How should this enrichment session output the results.";
         }
 
@@ -133,11 +136,61 @@ namespace TelegramDataEnrichment
                 keyboard.addCallbackButton("Go back to menu 🔙", RootMenu.CallbackName, 0);
                 return keyboard;
             }
+
             keyboard.addCallbackButton("Move to subdirectories", CallbackSubDirectory, 0);
             return keyboard;
         }
     }
-    
+
+    internal class CreateSessionOptions : Menu
+    {
+        protected override string Text()
+        {
+            return "What options are available? Please enter a comma-separated list";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
+        }
+    }
+
+    internal class CreateSessionOptionsExpandable : Menu
+    {
+        public const string CallbackName = "session_c_options_expand";
+
+        protected override string Text()
+        {
+            return "Are you allowed to add new options throughout the session, or are they hard-coded?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Allow adding new options", $"{CallbackName}:{true}", 0);
+            keyboard.addCallbackButton("Just use hard-coded options", $"{CallbackName}:{false}", 1);
+            return keyboard;
+        }
+    }
+
+    internal class CreateSessionOptionsMulti : Menu
+    {
+        public const string CallbackName = "session_c_options_multi";
+
+        protected override string Text()
+        {
+            return "Are you allowed to select multiple options?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Allow multiple options", $"{CallbackName}:{false}", 0);
+            keyboard.addCallbackButton("One options only", $"{CallbackName}:{true}", 1);
+            return keyboard;
+        }
+    }
+
     internal class SessionCreatedMenu : Menu
     {
         private readonly EnrichmentSession _newSession;

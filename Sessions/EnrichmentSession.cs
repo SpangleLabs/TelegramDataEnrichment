@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace TelegramDataEnrichment.Sessions
 {
@@ -11,23 +12,32 @@ namespace TelegramDataEnrichment.Sessions
         private readonly DataSource _dataSource;
         private readonly bool _isRandomOrder;
         private readonly DataOutput _dataOutput;
+        private readonly List<string> _options;
+        private readonly bool _canAddOptions;
+        private readonly bool _canSelectMultipleOptions;
 
         public EnrichmentSession(
-            int id, 
+            int id,
             string name,
             int batchCount,
-            DataSource dataSource, 
+            DataSource dataSource,
             bool isRandomOrder,
-            DataOutput dataOutput
-            )
+            DataOutput dataOutput,
+            List<string> options,
+            bool canAddOptions,
+            bool canSelectMultipleOptions
+        )
         {
             Id = id;
             Name = name; // User friendly name
             IsActive = false;
-            _batchCount = batchCount;  // How many to post at once
+            _batchCount = batchCount; // How many to post at once
             _dataSource = dataSource;
             _isRandomOrder = isRandomOrder;
             _dataOutput = dataOutput;
+            _options = options;
+            _canAddOptions = canAddOptions;
+            _canSelectMultipleOptions = canSelectMultipleOptions;
         }
 
         public EnrichmentSession(SessionData data)
@@ -36,6 +46,7 @@ namespace TelegramDataEnrichment.Sessions
             {
                 throw new ArgumentNullException();
             }
+
             Id = data.Id;
             Name = data.Name;
             IsActive = data.IsActive;
@@ -43,6 +54,9 @@ namespace TelegramDataEnrichment.Sessions
             _dataSource = DataSource.FromData(data.DataSource);
             _isRandomOrder = data.IsRandomOrder;
             _dataOutput = DataOutput.FromData(data.DataOutput, data.DataSource);
+            _options = data.Options;
+            _canAddOptions = data.CanAddOptions;
+            _canSelectMultipleOptions = data.CanSelectMultipleOptions;
         }
 
         public void Start()
@@ -59,13 +73,16 @@ namespace TelegramDataEnrichment.Sessions
         {
             return new SessionData
             {
-                Id = Id, 
-                Name = Name, 
+                Id = Id,
+                Name = Name,
                 IsActive = IsActive,
                 BatchCount = _batchCount,
                 DataSource = _dataSource.ToData(),
                 IsRandomOrder = _isRandomOrder,
-                DataOutput = _dataOutput.ToData()
+                DataOutput = _dataOutput.ToData(),
+                Options = _options,
+                CanAddOptions = _canAddOptions,
+                CanSelectMultipleOptions = _canSelectMultipleOptions
             };
         }
 
@@ -73,15 +90,17 @@ namespace TelegramDataEnrichment.Sessions
         {
             public int Id { get; set; }
             public string Name { get; set; }
+
             public bool IsActive { get; set; }
+
             // public List<long> messageIds { get; set; }
             public int BatchCount { get; set; }
             public DataSource.DataSourceData DataSource { get; set; }
             public bool IsRandomOrder { get; set; }
             public DataOutput.DataOutputData DataOutput { get; set; }
-            // public List<string> Options { get; set; }
-            // public bool IsMultiOption { get; set; }
-            // public bool CanManuallyInput { get; set; }
+            public List<string> Options { get; set; }
+            public bool CanAddOptions { get; set; }
+            public bool CanSelectMultipleOptions { get; set; }
         }
     }
 }
