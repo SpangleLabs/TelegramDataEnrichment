@@ -1,6 +1,6 @@
 ﻿# Telegram Data Enrichment
 
-This is a plugin for the [https://github.com/ZapDragon/DreadBot](Dreadbot) telegram bot.
+This is a plugin for the [Dreadbot](https://github.com/ZapDragon/DreadBot) telegram bot.
 
 This is my first C# project, and partially a platform to get more comfortable with the language.
 
