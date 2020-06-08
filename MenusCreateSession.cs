@@ -186,7 +186,7 @@ namespace TelegramDataEnrichment
         {
             var keyboard = new InlineKeyboardMarkup();
             keyboard.addCallbackButton("Allow multiple options", $"{CallbackName}:{false}", 0);
-            keyboard.addCallbackButton("One options only", $"{CallbackName}:{true}", 1);
+            keyboard.addCallbackButton("One option only", $"{CallbackName}:{true}", 1);
             return keyboard;
         }
     }
