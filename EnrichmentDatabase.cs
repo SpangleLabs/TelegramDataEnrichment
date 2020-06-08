@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
 using LiteDB;
@@ -27,7 +28,18 @@ namespace TelegramDataEnrichment
             lock (_sessions)
             {
                 return _sessions.FindAll()
-                    .Select(sess => new EnrichmentSession(sess))
+                    .Select(sess =>
+                    {
+                        try
+                        {
+                            return new EnrichmentSession(sess);
+                        }
+                        catch (ArgumentNullException)
+                        {
+                            return null;
+                        }
+                    })
+                    .Where(x => x != null)
                     .ToList();
             }
         }

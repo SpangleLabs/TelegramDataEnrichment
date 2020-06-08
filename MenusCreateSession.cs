@@ -108,6 +108,35 @@ namespace TelegramDataEnrichment
             return keyboard;
         }
     }
+
+    internal class CreateSessionOutputTypeMenu : Menu
+    {
+        private readonly DataSourceTypes? _dataSourceType;
+        public const string CallbackSubDirectory = "session_s_output:subdir";
+
+        public CreateSessionOutputTypeMenu(DataSourceTypes? dataSourceType)
+        {
+            _dataSourceType = dataSourceType;
+        }
+        protected override string Text()
+        {
+            return _dataSourceType != DataSourceTypes.DirectorySource 
+                ? "There are no data output types available for this data source type." 
+                : "How should this enrichment session output the results.";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            if (_dataSourceType != DataSourceTypes.DirectorySource)
+            {
+                keyboard.addCallbackButton("Go back to menu 🔙", RootMenu.CallbackName, 0);
+                return keyboard;
+            }
+            keyboard.addCallbackButton("Move to subdirectories", CallbackSubDirectory, 0);
+            return keyboard;
+        }
+    }
     
     internal class SessionCreatedMenu : Menu
     {

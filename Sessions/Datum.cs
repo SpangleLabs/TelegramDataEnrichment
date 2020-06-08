@@ -2,7 +2,8 @@
 {
     public abstract class Datum
     {
-        public int DatumId;
+        public string DatumId;
+        public int IdNumber;
         public long MessageId;
 
         public abstract void Post();
@@ -12,9 +13,10 @@
     {
         public string Text;
         
-        public TextDatum(int datumId, string text)
+        public TextDatum(string datumId, int idNumber, string text)
         {
             DatumId = datumId;
+            IdNumber = idNumber;
             Text = text;
         }
 
@@ -28,9 +30,10 @@
     {
         public string ImagePath;
 
-        public ImageDatum(int datumId, string imagePath)
+        public ImageDatum(string datumId, int idNumber, string imagePath)
         {
             DatumId = datumId;
+            IdNumber = idNumber;
             ImagePath = imagePath;
         }
 
@@ -44,9 +47,10 @@
     {
         public string DocumentPath;
 
-        public DocumentDatum(int datumId, string documentPath)
+        public DocumentDatum(string datumId, int idNumber, string documentPath)
         {
             DatumId = datumId;
+            IdNumber = idNumber;
             DocumentPath = documentPath;
         }
 

@@ -10,6 +10,7 @@ namespace TelegramDataEnrichment.Sessions
             BatchCount,
             DataSource,
             RandomOrder,
+            DataOutput,
             Done
         }
 
@@ -18,10 +19,12 @@ namespace TelegramDataEnrichment.Sessions
         private int? _batchCount;
         private readonly PartialSource _dataSource;
         private bool? _isRandomOrder;
+        private readonly PartialOutput _dataOutput;
 
         public PartialSession()
         {
             _dataSource = new PartialSource();
+            _dataOutput = new PartialOutput();
         }
 
         public PartialSession(PartialData data)
@@ -31,6 +34,7 @@ namespace TelegramDataEnrichment.Sessions
             _batchCount = data.BatchCount;
             _dataSource = new PartialSource(data.DataSource);
             _isRandomOrder = data.IsRandomOrder;
+            _dataOutput = new PartialOutput(data.DataOutput);
         }
 
         public SessionParts NextPart()
@@ -54,6 +58,11 @@ namespace TelegramDataEnrichment.Sessions
             {
                 return SessionParts.RandomOrder;
             }
+            
+            if (_dataOutput.NextPart() != PartialOutput.OutputParts.Done)
+            {
+                return SessionParts.DataOutput;
+            }
 
             return SessionParts.Done;
         }
@@ -70,6 +79,8 @@ namespace TelegramDataEnrichment.Sessions
                     return _dataSource.NextMenu();
                 case SessionParts.RandomOrder:
                     return new CreateSessionRandomOrder();
+                case SessionParts.DataOutput:
+                    return _dataOutput.NextMenu(_dataSource);
                 case SessionParts.Done:
                     return null;
                 default:
@@ -85,6 +96,8 @@ namespace TelegramDataEnrichment.Sessions
                     return true;
                 case SessionParts.DataSource:
                     return _dataSource.WaitingForText();
+                case SessionParts.DataOutput:
+                    return _dataOutput.WaitingForText();
                 default:
                     return false;
             }
@@ -101,6 +114,9 @@ namespace TelegramDataEnrichment.Sessions
                 case SessionParts.DataSource:
                     _dataSource.AddText(text);
                     break;
+                case SessionParts.DataOutput:
+                    _dataOutput.AddText(text);
+                    break;
             }
         }
 
@@ -114,6 +130,8 @@ namespace TelegramDataEnrichment.Sessions
                     return _dataSource.WaitingForCallback();
                 case SessionParts.RandomOrder:
                     return true;
+                case SessionParts.DataOutput:
+                    return _dataOutput.WaitingForCallback();
                 default:
                     return false;
             }
@@ -144,6 +162,11 @@ namespace TelegramDataEnrichment.Sessions
                 var randomOrder = callbackData.Split(':')[1];
                 _isRandomOrder = bool.Parse(randomOrder);
             }
+
+            if (nextPart == SessionParts.DataOutput)
+            {
+                _dataOutput.AddCallback(callbackData);
+            }
         }
 
         public EnrichmentSession BuildSession(int nextId)
@@ -153,14 +176,16 @@ namespace TelegramDataEnrichment.Sessions
                 || _batchCount == null 
                 || _dataSource.NextPart() != PartialSource.SourceParts.Done
                 || _isRandomOrder == null
+                || _dataOutput.NextPart() != PartialOutput.OutputParts.Done
                 )
             {
                 throw new ArgumentNullException();
             }
             
             var dataSource = _dataSource.BuildSource();
+            var dataOutput = _dataOutput.BuildOutput(dataSource.ToData());
 
-            return new EnrichmentSession(nextId, _name, (int) _batchCount, dataSource, (bool) _isRandomOrder);
+            return new EnrichmentSession(nextId, _name, (int) _batchCount, dataSource, (bool) _isRandomOrder, dataOutput);
         }
 
         public PartialData ToData()
@@ -171,7 +196,8 @@ namespace TelegramDataEnrichment.Sessions
                 Name = _name,
                 BatchCount = _batchCount,
                 DataSource = _dataSource.ToData(),
-                IsRandomOrder = _isRandomOrder
+                IsRandomOrder = _isRandomOrder,
+                DataOutput = _dataOutput.ToData()
             };
         }
 
@@ -182,6 +208,7 @@ namespace TelegramDataEnrichment.Sessions
             public int? BatchCount { get; set; }
             public PartialSource.PartialData DataSource { get; set; }
             public bool? IsRandomOrder { get; set; }
+            public PartialOutput.PartialData DataOutput { get; set; }
         }
     }
 }

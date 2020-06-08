@@ -69,15 +69,15 @@ namespace TelegramDataEnrichment.Sessions
                 switch (ext)
                 {
                     case ".txt":
-                        data.Add(new TextDatum(datumId++, File.ReadAllText(file)));
+                        data.Add(new TextDatum(file, datumId++, File.ReadAllText(file)));
                         break;
                     case ".png":
                     case ".jpg":
                     case ".jpeg":
-                        data.Add(new ImageDatum(datumId++, file));
+                        data.Add(new ImageDatum(file, datumId++, file));
                         break;
                     default:
-                        data.Add(new DocumentDatum(datumId++, file));
+                        data.Add(new DocumentDatum(file, datumId++, file));
                         break;
                 }
             }

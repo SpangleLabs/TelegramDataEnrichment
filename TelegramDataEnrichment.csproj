@@ -48,6 +48,7 @@
         <Compile Include="Sessions\DataSource.cs" />
         <Compile Include="Sessions\Datum.cs" />
         <Compile Include="Sessions\EnrichmentSession.cs" />
+        <Compile Include="Sessions\PartialOutput.cs" />
         <Compile Include="Sessions\PartialSession.cs" />
         <Compile Include="Sessions\PartialSource.cs" />
     </ItemGroup>
