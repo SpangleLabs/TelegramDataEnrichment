@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -200,7 +200,7 @@ namespace TelegramDataEnrichment
         {
             if (!_sessions.Any())
             {
-                return 0;
+                return 1;
             }
 
             var currentIds = _sessions.Select(x => x.Id);
