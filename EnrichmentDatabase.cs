@@ -36,6 +36,7 @@ namespace TelegramDataEnrichment
                         }
                         catch (ArgumentNullException)
                         {
+                            _sessions.Delete(sess.Id);
                             return null;
                         }
                     })
