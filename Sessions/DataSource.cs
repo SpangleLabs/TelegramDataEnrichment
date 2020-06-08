@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -15,8 +15,8 @@ namespace TelegramDataEnrichment.Sessions
 
         public class DataSourceData
         {
-            public DataSourceTypes Type;
-            public string DirectoryName;
+            public DataSourceTypes Type { get; set; }
+            public string DirectoryName { get; set; }
         }
 
         public static DataSource FromData(DataSourceData data)

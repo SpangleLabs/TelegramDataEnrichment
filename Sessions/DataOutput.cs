@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -18,8 +18,8 @@ namespace TelegramDataEnrichment.Sessions
 
         public class DataOutputData
         {
-            public DataOutputTypes Type;
-            public string DataDirectory;
+            public DataOutputTypes Type { get; set; }
+            public string DataDirectory { get; set; }
         }
 
         public static DataOutput FromData(DataOutputData data, DataSource.DataSourceData sourceData)
