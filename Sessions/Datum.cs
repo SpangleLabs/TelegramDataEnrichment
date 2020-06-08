@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using DreadBot;
 using File = System.IO.File;
@@ -43,7 +43,7 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            throw new System.NotImplementedException();
+            Methods.sendMessage(chatId, Text, keyboard: keyboard);
         }
     }
 
@@ -60,7 +60,9 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            throw new System.NotImplementedException();
+            var stream = File.OpenRead(ImagePath);
+            var imageContent = new StreamContent(stream);
+            Methods.sendPhoto(chatId, imageContent, ImagePath,"", keyboard: keyboard);
         }
     }
 
@@ -77,7 +79,9 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            throw new System.NotImplementedException();
+            var stream = File.OpenRead(DocumentPath);
+            var docContent = new StreamContent(stream);
+            Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
         }
     }
 }

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -45,7 +45,7 @@ namespace TelegramDataEnrichment
                     menu = new StopSessionMenu(_sessions);
                     break;
                 case CreateSessionMenu.CallbackName:
-                    _partialSession = new PartialSession();
+                    _partialSession = new PartialSession(callback.message.chat.id);
                     _database.SavePartial(_partialSession);
                     menu = new CreateSessionMenu();
                     break;

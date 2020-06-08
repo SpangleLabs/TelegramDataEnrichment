@@ -19,6 +19,7 @@ namespace TelegramDataEnrichment.Sessions
         }
 
         public readonly int Id = 1;
+        private readonly long _chatId;
         private string _name;
         private int? _batchCount;
         private readonly PartialSource _dataSource;
@@ -28,8 +29,9 @@ namespace TelegramDataEnrichment.Sessions
         private bool? _canAddOptions;
         private bool? _canSelectMultipleOptions;
 
-        public PartialSession()
+        public PartialSession(long chatId)
         {
+            _chatId = chatId;
             _dataSource = new PartialSource();
             _dataOutput = new PartialOutput();
         }
@@ -37,6 +39,7 @@ namespace TelegramDataEnrichment.Sessions
         public PartialSession(PartialData data)
         {
             Id = data.Id;
+            _chatId = data.ChatId;
             _name = data.Name;
             _batchCount = data.BatchCount;
             _dataSource = new PartialSource(data.DataSource);
@@ -228,6 +231,7 @@ namespace TelegramDataEnrichment.Sessions
 
             return new EnrichmentSession(
                 nextId,
+                _chatId,
                 _name,
                 (int) _batchCount,
                 dataSource,
@@ -244,6 +248,7 @@ namespace TelegramDataEnrichment.Sessions
             return new PartialData
             {
                 Id = Id,
+                ChatId = _chatId,
                 Name = _name,
                 BatchCount = _batchCount,
                 DataSource = _dataSource.ToData(),
@@ -258,6 +263,7 @@ namespace TelegramDataEnrichment.Sessions
         public class PartialData
         {
             public int Id { get; set; }
+            public long ChatId { get; set; }
             public string Name { get; set; }
             public int? BatchCount { get; set; }
             public PartialSource.PartialData DataSource { get; set; }

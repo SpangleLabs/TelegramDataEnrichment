@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -10,6 +10,7 @@ namespace TelegramDataEnrichment.Sessions
         public bool IsActive { get; private set; }
         public string Name { get; }
         public int Id { get; }
+        private readonly long _chatId;
         private readonly int _batchCount;
         private readonly DataSource _dataSource;
         private readonly bool _isRandomOrder;
@@ -17,9 +18,11 @@ namespace TelegramDataEnrichment.Sessions
         private readonly List<string> _options;
         private readonly bool _canAddOptions;
         private readonly bool _canSelectMultipleOptions;
+        private readonly List<long> _messages;
 
         public EnrichmentSession(
             int id,
+            long chatId,
             string name,
             int batchCount,
             DataSource dataSource,
@@ -31,6 +34,7 @@ namespace TelegramDataEnrichment.Sessions
         )
         {
             Id = id;
+            _chatId = chatId;
             Name = name; // User friendly name
             IsActive = false;
             _batchCount = batchCount; // How many to post at once
@@ -40,6 +44,7 @@ namespace TelegramDataEnrichment.Sessions
             _options = options;
             _canAddOptions = canAddOptions;
             _canSelectMultipleOptions = canSelectMultipleOptions;
+            _messages = new List<long>();
         }
 
         public EnrichmentSession(SessionData data)
@@ -50,6 +55,7 @@ namespace TelegramDataEnrichment.Sessions
             }
 
             Id = data.Id;
+            _chatId = data.ChatId;
             Name = data.Name;
             IsActive = data.IsActive;
             _batchCount = data.BatchCount;
@@ -59,11 +65,29 @@ namespace TelegramDataEnrichment.Sessions
             _options = data.Options;
             _canAddOptions = data.CanAddOptions;
             _canSelectMultipleOptions = data.CanSelectMultipleOptions;
+            _messages = data.MessageIds ?? new List<long>();
         }
 
         public void Start()
         {
             IsActive = true;
+            if (_messages.Count < _batchCount)
+            {
+                var data = _dataSource.ListData();
+                var incompleteData = _dataOutput.RemoveCompleted(data);
+                if (_isRandomOrder)
+                {
+                    incompleteData = incompleteData.OrderBy(a => Guid.NewGuid()).ToList();
+                }
+
+                var postData = incompleteData.Take(_batchCount - _messages.Count);
+                foreach (var datum in postData)
+                {
+                    var keyboard = new InlineKeyboardMarkup();
+                    keyboard.addCallbackButton("Errr", "erm", 0);
+                    datum.Post(_chatId, keyboard);
+                }
+            }
         }
 
         public void Stop()
@@ -95,6 +119,7 @@ namespace TelegramDataEnrichment.Sessions
             return new SessionData
             {
                 Id = Id,
+                ChatId = _chatId,
                 Name = Name,
                 IsActive = IsActive,
                 BatchCount = _batchCount,
@@ -103,18 +128,18 @@ namespace TelegramDataEnrichment.Sessions
                 DataOutput = _dataOutput.ToData(),
                 Options = _options,
                 CanAddOptions = _canAddOptions,
-                CanSelectMultipleOptions = _canSelectMultipleOptions
+                CanSelectMultipleOptions = _canSelectMultipleOptions,
+                MessageIds = _messages
             };
         }
 
         public class SessionData
         {
             public int Id { get; set; }
+            public long ChatId { get; set; }
             public string Name { get; set; }
-
             public bool IsActive { get; set; }
-
-            // public List<long> messageIds { get; set; }
+            public List<long> MessageIds { get; set; }
             public int BatchCount { get; set; }
             public DataSource.DataSourceData DataSource { get; set; }
             public bool IsRandomOrder { get; set; }
