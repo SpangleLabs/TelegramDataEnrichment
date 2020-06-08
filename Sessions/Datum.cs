@@ -32,54 +32,54 @@ namespace TelegramDataEnrichment.Sessions
 
     public class TextDatum : Datum
     {
-        public string Text;
+        private readonly string _text;
         
         public TextDatum(string datumId, int idNumber, string text)
         {
             DatumId = datumId;
             IdNumber = idNumber;
-            Text = text;
+            _text = text;
         }
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            Methods.sendMessage(chatId, Text, keyboard: keyboard);
+            Methods.sendMessage(chatId, _text, keyboard: keyboard);
         }
     }
 
     public class ImageDatum : Datum
     {
-        public string ImagePath;
+        private readonly string _imagePath;
 
         public ImageDatum(string datumId, int idNumber, string imagePath)
         {
             DatumId = datumId;
             IdNumber = idNumber;
-            ImagePath = imagePath;
+            _imagePath = imagePath;
         }
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            var stream = File.OpenRead(ImagePath);
+            var stream = File.OpenRead(_imagePath);
             var imageContent = new StreamContent(stream);
-            Methods.sendPhoto(chatId, imageContent, ImagePath,"", keyboard: keyboard);
+            Methods.sendPhoto(chatId, imageContent, _imagePath,"", keyboard: keyboard);
         }
     }
 
     public class DocumentDatum : Datum
     {
-        public string DocumentPath;
+        private readonly string _documentPath;
 
         public DocumentDatum(string datumId, int idNumber, string documentPath)
         {
             DatumId = datumId;
             IdNumber = idNumber;
-            DocumentPath = documentPath;
+            _documentPath = documentPath;
         }
 
         public override void Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            var stream = File.OpenRead(DocumentPath);
+            var stream = File.OpenRead(_documentPath);
             var docContent = new StreamContent(stream);
             Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
         }
