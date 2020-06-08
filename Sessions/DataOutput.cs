@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -12,6 +12,9 @@ namespace TelegramDataEnrichment.Sessions
         }
 
         public abstract List<Datum> RemoveCompleted(List<Datum> data);
+
+        public abstract List<Datum> ListCompleted();
+        
         public abstract DataOutputData ToData();
 
         public abstract void HandleDatum(Datum datum, string tag);
@@ -56,6 +59,22 @@ namespace TelegramDataEnrichment.Sessions
 
         public override List<Datum> RemoveCompleted(List<Datum> data)
         {
+            return data;
+        }
+
+        public override List<Datum> ListCompleted()
+        {
+            var directories = Directory.GetDirectories(_dataDirectory);
+            var datumId = 0;
+            var data = new List<Datum>();
+            foreach (var directory in directories)
+            {
+                var files = Directory.GetFiles(directory);
+                foreach (var file in files)
+                {
+                    data.Add(Datum.FromFile(file, datumId++));
+                }
+            }
             return data;
         }
 

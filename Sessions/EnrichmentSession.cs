@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using DreadBot;
 
 namespace TelegramDataEnrichment.Sessions
 {
@@ -67,6 +69,25 @@ namespace TelegramDataEnrichment.Sessions
         public void Stop()
         {
             IsActive = false;
+        }
+
+        public List<Datum> AllData()
+        {
+            var sourceData = _dataSource.ListData();
+            var completeData = _dataOutput.ListCompleted();
+            var notInSourceData = completeData.Where(d => sourceData.All(d2 => d2.DatumId != d.DatumId));
+            var allData = sourceData.Concat(notInSourceData).ToList();
+            return allData;
+        }
+
+        public List<Datum> IncompleteData()
+        {
+            return _dataOutput.RemoveCompleted(_dataSource.ListData());
+        }
+
+        public List<Datum> CompletedData()
+        {
+            return _dataOutput.ListCompleted();
         }
 
         public SessionData ToData()
