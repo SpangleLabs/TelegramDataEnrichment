@@ -13,7 +13,7 @@ namespace TelegramDataEnrichment.Sessions
             Done
         }
 
-        private DataSourceTypes? _type;
+        public DataSourceTypes? Type;
         private string _directoryName;
         private List<string> _listPotentialDirectories;
 
@@ -24,7 +24,7 @@ namespace TelegramDataEnrichment.Sessions
 
         public PartialSource(PartialData data)
         {
-            _type = data.Type;
+            Type = data.Type;
             _directoryName = data.DirectoryName;
         }
 
@@ -35,7 +35,7 @@ namespace TelegramDataEnrichment.Sessions
         
         public SourceParts NextPart()
         {
-            switch (_type)
+            switch (Type)
             {
                 case null:
                     return SourceParts.Type;
@@ -50,7 +50,7 @@ namespace TelegramDataEnrichment.Sessions
 
         public Menu NextMenu()
         {
-            switch (_type)
+            switch (Type)
             {
                 case null:
                     return new CreateSessionDataSourceTypeMenu();
@@ -75,7 +75,7 @@ namespace TelegramDataEnrichment.Sessions
 
         public bool WaitingForCallback()
         {
-            switch (_type)
+            switch (Type)
             {
                 case null:
                     return true;
@@ -94,7 +94,7 @@ namespace TelegramDataEnrichment.Sessions
                 switch (callbackData)
                 {
                     case CreateSessionDataSourceTypeMenu.CallbackDirectorySource:
-                        _type = DataSourceTypes.DirectorySource;
+                        Type = DataSourceTypes.DirectorySource;
                         break;
                 }
             }
@@ -109,12 +109,12 @@ namespace TelegramDataEnrichment.Sessions
 
         public DataSource BuildSource()
         {
-            if (_type == null)
+            if (Type == null)
             {
                 throw new ArgumentException();
             }
 
-            if (_type == DataSourceTypes.DirectorySource)
+            if (Type == DataSourceTypes.DirectorySource)
             {
                 if (_directoryName == null)
                 {
@@ -132,7 +132,7 @@ namespace TelegramDataEnrichment.Sessions
         {
             return new PartialData()
             {
-                Type = _type, 
+                Type = Type, 
                 DirectoryName = _directoryName
             };
         }

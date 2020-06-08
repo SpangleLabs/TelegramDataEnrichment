@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DreadBot;
 using TelegramDataEnrichment.Sessions;
 
@@ -113,31 +114,42 @@ namespace TelegramDataEnrichment
 
     internal class CreateSessionOutputTypeMenu : Menu
     {
-        private readonly DataSourceTypes? _dataSourceType;
+        private readonly List<DataOutput.DataOutputTypes> _validOutputTypes;
         public const string CallbackSubDirectory = "session_s_output:subdir";
 
-        public CreateSessionOutputTypeMenu(DataSourceTypes? dataSourceType)
+        public CreateSessionOutputTypeMenu(List<DataOutput.DataOutputTypes> validOutputTypes)
         {
-            _dataSourceType = dataSourceType;
+            _validOutputTypes = validOutputTypes;
         }
 
         protected override string Text()
         {
-            return _dataSourceType != DataSourceTypes.DirectorySource
-                ? "There are no data output types available for this data source type."
+            return _validOutputTypes.Count == 0 
+                ? "There are no data output types available for this data source type." 
                 : "How should this enrichment session output the results.";
         }
 
         protected override InlineKeyboardMarkup Keyboard()
         {
             var keyboard = new InlineKeyboardMarkup();
-            if (_dataSourceType != DataSourceTypes.DirectorySource)
+            if (_validOutputTypes.Count == 0)
             {
                 keyboard.addCallbackButton("Go back to menu 🔙", RootMenu.CallbackName, 0);
                 return keyboard;
             }
 
-            keyboard.addCallbackButton("Move to subdirectories", CallbackSubDirectory, 0);
+            foreach (var outputType in _validOutputTypes)
+            {
+                switch (outputType)
+                {
+                    case DataOutput.DataOutputTypes.SubDirectory:
+                        keyboard.addCallbackButton("Move to subdirectories", CallbackSubDirectory, 0);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
             return keyboard;
         }
     }

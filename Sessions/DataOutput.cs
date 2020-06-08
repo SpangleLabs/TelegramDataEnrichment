@@ -36,7 +36,7 @@ namespace TelegramDataEnrichment.Sessions
             }
         }
 
-        public static List<DataOutputTypes> AllowedDataOutput(DataSourceTypes dataSourceType)
+        public static List<DataOutputTypes> AllowedDataOutput(DataSourceTypes? dataSourceType)
         {
             switch (dataSourceType)
             {

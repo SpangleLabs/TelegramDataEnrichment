@@ -43,7 +43,7 @@ namespace TelegramDataEnrichment.Sessions
             switch (_type)
             {
                 case null:
-                    return new CreateSessionOutputTypeMenu(partialSource.ToData().Type);
+                    return new CreateSessionOutputTypeMenu(DataOutput.AllowedDataOutput(partialSource.Type));
                 case DataOutput.DataOutputTypes.SubDirectory:
                     return null;
                 default:
