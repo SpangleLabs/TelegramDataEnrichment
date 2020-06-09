@@ -16,8 +16,8 @@ namespace TelegramDataEnrichment.Sessions
         public abstract List<Datum> ListCompleted();
         
         public abstract DataOutputData ToData();
-
         public abstract void HandleDatum(Datum datum, string tag);
+        public abstract void HandleDatumDone(Datum datum);
 
         public class DataOutputData
         {
@@ -50,7 +50,7 @@ namespace TelegramDataEnrichment.Sessions
 
     public class SubDirectoryOutput : DataOutput
     {
-        private string _dataDirectory;
+        private readonly string _dataDirectory;
 
         public SubDirectoryOutput(string dataDirectory)
         {
@@ -91,9 +91,14 @@ namespace TelegramDataEnrichment.Sessions
         {
             Directory.CreateDirectory($"{_dataDirectory}/{tag}");
             File.Move(
-                $"{_dataDirectory}/{datum.DatumId}",
-                $"{_dataDirectory}/{tag}/{datum.DatumId}"
+                datum.DatumId,
+                $"{_dataDirectory}/{tag}/{Path.GetFileName(datum.DatumId)}"
             );
+        }
+
+        public override void HandleDatumDone(Datum datum)
+        {
+            throw new ArgumentOutOfRangeException();
         }
     }
 }
