@@ -25,6 +25,10 @@ namespace TelegramDataEnrichment.Sessions
             IdIndexData data
         )
         {
+            if (data?.CallbackIdToMessageId == null || data.CallbackIdToDatumId == null || data.MessageIdToPage == null)
+            {
+                throw new ArgumentNullException();
+            }
             _callbackIdToMessageId = data.CallbackIdToMessageId;
             _callbackIdToDatumId = data.CallbackIdToDatumId;
             _messageIdToPage = data.MessageIdToPage;
