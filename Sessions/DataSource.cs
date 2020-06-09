@@ -35,7 +35,6 @@ namespace TelegramDataEnrichment.Sessions
     {
         private const string BaseDirectory = "input_data";
         private readonly string _directory;
-        private List<Datum> _data;
 
         public DirectorySource(string directory)
         {
@@ -54,11 +53,6 @@ namespace TelegramDataEnrichment.Sessions
         }
         
         public override List<Datum> ListData()
-        {
-            return _data ?? (_data = ParseDirectory());
-        }
-
-        private List<Datum> ParseDirectory()
         {
             var files = Directory.GetFiles(_directory);
             var data = new List<Datum>();
