@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -311,7 +311,7 @@ namespace TelegramDataEnrichment.Sessions
                 CallbackIdToMessageId = callbackIdToMessageId;
                 CallbackIdToDatumId = callbackIdToDatumId;
                 MessageIdToPage = messageIdToPage;
-                _nextCallbackId = callbackIdToDatumId.Count == 0 ? 0 : callbackIdToDatumId.Keys.Max();
+                _nextCallbackId = callbackIdToDatumId.Count == 0 ? 0 : callbackIdToDatumId.Keys.Max() + 1;
                 _datumIdToCallbackId = callbackIdToDatumId.ToDictionary((i) => i.Value, (i) => i.Key);
             }
 
