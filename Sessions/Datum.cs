@@ -11,7 +11,7 @@ namespace TelegramDataEnrichment.Sessions
         public int IdNumber;
         public long MessageId;
 
-        public abstract void Post(long chatId, InlineKeyboardMarkup keyboard);
+        public abstract Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard);
 
         public static Datum FromFile(string fileName, int datumId)
         {
@@ -41,9 +41,11 @@ namespace TelegramDataEnrichment.Sessions
             _text = text;
         }
 
-        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            Methods.sendMessage(chatId, _text, keyboard: keyboard);
+            var result = Methods.sendMessage(chatId, _text, keyboard: keyboard);
+            MessageId = result.result.message_id;
+            return result;
         }
     }
 
@@ -58,11 +60,13 @@ namespace TelegramDataEnrichment.Sessions
             _imagePath = imagePath;
         }
 
-        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
         {
             var stream = File.OpenRead(_imagePath);
             var imageContent = new StreamContent(stream);
-            Methods.sendPhoto(chatId, imageContent, _imagePath,"", keyboard: keyboard);
+            var result = Methods.sendPhoto(chatId, imageContent, _imagePath,"", keyboard: keyboard);
+            MessageId = result.result.message_id;
+            return result;
         }
     }
 
@@ -77,11 +81,13 @@ namespace TelegramDataEnrichment.Sessions
             _documentPath = documentPath;
         }
 
-        public override void Post(long chatId, InlineKeyboardMarkup keyboard)
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
         {
             var stream = File.OpenRead(_documentPath);
             var docContent = new StreamContent(stream);
-            Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
+            var result = Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
+            MessageId = result.result.message_id;
+            return result;
         }
     }
 }
