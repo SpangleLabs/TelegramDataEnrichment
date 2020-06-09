@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -187,23 +187,21 @@ namespace TelegramDataEnrichment.Sessions
                 }
             }
 
-            if (pages > 1)
-            {
-                if (currentPage > 0)
-                {
-                    keyboard.addCallbackButton("Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
-                }
-
-                if (_canSelectMultipleOptions)
-                {
-                    keyboard.addCallbackButton("*Done*", $"{CallbackName}:{Id}:{callbackId}:{CallbackDone}", rowId);
-                }
-
-                if (currentPage + 1 < pages)
-                {
-                    keyboard.addCallbackButton("Next page", $"{CallbackName}:{Id}:{callbackId}:{CallbackNext}", rowId);
-                }
+            if (pages > 1 && currentPage > 0)
+            { 
+                keyboard.addCallbackButton("Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
             }
+            if (_canSelectMultipleOptions)
+            {
+                keyboard.addCallbackButton("*Done*", $"{CallbackName}:{Id}:{callbackId}:{CallbackDone}", rowId);
+            }
+            if (pages > 1 && currentPage + 1 < pages) { 
+                keyboard.addCallbackButton("Next page", $"{CallbackName}:{Id}:{callbackId}:{CallbackNext}", rowId);
+            }
+
+            rowId++;
+            
+            keyboard.addCallbackButton("End session", $"{StopSessionMenu.CallbackName}:{Id}", rowId);
 
             return keyboard;
         }
