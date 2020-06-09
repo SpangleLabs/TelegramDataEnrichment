@@ -95,7 +95,7 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void HandleDatumDone(Datum datum)
         {
-            throw new ArgumentOutOfRangeException();
+            return;
         }
     }
 }

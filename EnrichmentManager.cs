@@ -122,11 +122,20 @@ namespace TelegramDataEnrichment
                 }
             }
 
-            if (_partialSession != null && _partialSession.WaitingForText())
+            if (menu == null && _partialSession != null && _partialSession.WaitingForText())
             {
                 _partialSession.AddText(eventArgs.msg.text);
                 _database.SavePartial(_partialSession);
                 menu = CheckPartialCompletionAndGetNextMenu();
+            }
+
+            if (menu == null)
+            {
+                foreach (var session in _sessions)
+                {
+                    menu = session.HandleMessage(eventArgs.msg);
+                    if (menu != null) break;
+                }
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);

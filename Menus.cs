@@ -267,4 +267,25 @@ namespace TelegramDataEnrichment
             return keyboard;
         }
     }
+
+    public class AddedNewSessionOption : Menu
+    {
+        private EnrichmentSession _session;
+        private string _newOption;
+
+        public AddedNewSessionOption(EnrichmentSession session, string newOption)
+        {
+            _session = session;
+            _newOption = newOption;
+        }
+        protected override string Text()
+        {
+            return $"Added new option \"{_newOption}\" to enrichment session: {_session.Name}";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
+        }
+    }
 }

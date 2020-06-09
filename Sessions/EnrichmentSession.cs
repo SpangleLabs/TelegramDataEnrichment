@@ -48,7 +48,7 @@ namespace TelegramDataEnrichment.Sessions
             _options = options;
             _canAddOptions = canAddOptions;
             _canSelectMultipleOptions = canSelectMultipleOptions;
-            _idIndex = new SessionIdIndex();
+            _idIndex = new SessionIdIndex(_options);
         }
 
         public EnrichmentSession(SessionData data)
@@ -86,20 +86,7 @@ namespace TelegramDataEnrichment.Sessions
             
             var callbackId = int.Parse(split[2]);
             var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
-            var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
-            
-            
             var optionId = split[3];
-            if (optionId.Equals(CallbackDone))
-            {
-                foreach (var datum in matchingData)
-                {
-                    _dataOutput.HandleDatumDone(datum);
-                    RemoveMessage(datum);
-                }
-                PostMessages();
-                return;
-            }
 
             if (optionId.Equals(CallbackPrev))
             {
@@ -114,14 +101,53 @@ namespace TelegramDataEnrichment.Sessions
                 UpdateKeyboard(callbackId);
                 return;
             }
+            
+            if (optionId.Equals(CallbackDone))
+            {
+                MarkDatumDone(datumId);
+                return;
+            }
 
-            var option = _options[int.Parse(optionId)];
+            var option = _idIndex.GetOptionByOptionId(int.Parse(optionId));
+            MarkDatum(datumId, option);
+        }
+
+        private void MarkDatum(string datumId, string option)
+        {
+            var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
             foreach (var datum in matchingData)
             {
                 _dataOutput.HandleDatum(datum, option);
                 if (!_canSelectMultipleOptions) RemoveMessage(datum);
             }
             PostMessages();
+        }
+
+        private void MarkDatumDone(string datumId)
+        {
+            var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
+            foreach (var datum in matchingData)
+            {
+                _dataOutput.HandleDatumDone(datum);
+                RemoveMessage(datum);
+            }
+            PostMessages();
+        }
+
+        public Menu HandleMessage(Message msg)
+        {
+            if (!_canAddOptions) return null;
+            var replyingTo = msg?.reply_to_message?.message_id;
+            if (replyingTo == null) return null;
+            if (!_idIndex.MessageIds().Contains((long) replyingTo)) return null;
+            var newOption = msg.text.Trim();
+            _options.Add(newOption);
+            _idIndex.AddOption(newOption);
+
+            var callbackId = _idIndex.GetCallbackIdFromMessageId((long) replyingTo);
+            var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
+            MarkDatum(datumId, newOption);
+            return new AddedNewSessionOption(this, newOption);
         }
 
         private void RemoveMessage(Datum datum)
@@ -170,14 +196,15 @@ namespace TelegramDataEnrichment.Sessions
             var optionsOnPage = _options.Skip(perPage * currentPage).Take(perPage).ToList();
             var numOptionsOnPage = optionsOnPage.Count;
             var columns = ((numOptionsOnPage - 1) / maxRows) + 1;
-            
-            var optionId = 0;
+
+            var buttonId = 0;
             var rowId = 0;
             foreach (var option in optionsOnPage)
             {
+                var optionId = _idIndex.GetOptionIdByOption(option);
                 keyboard.addCallbackButton(option, $"{CallbackName}:{Id}:{callbackId}:{optionId}", rowId);
-                optionId++;
-                if (optionId % columns == 0)
+                buttonId++;
+                if (buttonId % columns == 0)
                 {
                     rowId++;
                 }
