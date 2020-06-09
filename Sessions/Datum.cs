@@ -7,25 +7,23 @@ namespace TelegramDataEnrichment.Sessions
 {
     public abstract class Datum
     {
-        public string DatumId;
-        public int IdNumber;
-        public long MessageId;
+        public string DatumId;  // This wants to be an external unique ID
 
         public abstract Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard);
 
-        public static Datum FromFile(string fileName, int datumId)
+        public static Datum FromFile(string fileName)
         {
             var ext = Path.GetExtension(fileName).ToLower();
             switch (ext)
             {
                 case ".txt":
-                    return new TextDatum(fileName, datumId, File.ReadAllText(fileName));
+                    return new TextDatum(fileName, File.ReadAllText(fileName));
                 case ".png":
                 case ".jpg":
                 case ".jpeg":
-                    return  new ImageDatum(fileName, datumId, fileName);
+                    return  new ImageDatum(fileName, fileName);
                 default:
-                    return new DocumentDatum(fileName, datumId, fileName);
+                    return new DocumentDatum(fileName, fileName);
             }
         }
     }
@@ -34,18 +32,15 @@ namespace TelegramDataEnrichment.Sessions
     {
         private readonly string _text;
         
-        public TextDatum(string datumId, int idNumber, string text)
+        public TextDatum(string datumId, string text)
         {
             DatumId = datumId;
-            IdNumber = idNumber;
             _text = text;
         }
 
         public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
         {
-            var result = Methods.sendMessage(chatId, _text, keyboard: keyboard);
-            MessageId = result.result.message_id;
-            return result;
+            return Methods.sendMessage(chatId, _text, keyboard: keyboard);
         }
     }
 
@@ -53,10 +48,9 @@ namespace TelegramDataEnrichment.Sessions
     {
         private readonly string _imagePath;
 
-        public ImageDatum(string datumId, int idNumber, string imagePath)
+        public ImageDatum(string datumId, string imagePath)
         {
             DatumId = datumId;
-            IdNumber = idNumber;
             _imagePath = imagePath;
         }
 
@@ -64,9 +58,7 @@ namespace TelegramDataEnrichment.Sessions
         {
             var stream = File.OpenRead(_imagePath);
             var imageContent = new StreamContent(stream);
-            var result = Methods.sendPhoto(chatId, imageContent, _imagePath,"", keyboard: keyboard);
-            MessageId = result.result.message_id;
-            return result;
+            return Methods.sendPhoto(chatId, imageContent, _imagePath,"", keyboard: keyboard);
         }
     }
 
@@ -74,10 +66,9 @@ namespace TelegramDataEnrichment.Sessions
     {
         private readonly string _documentPath;
 
-        public DocumentDatum(string datumId, int idNumber, string documentPath)
+        public DocumentDatum(string datumId, string documentPath)
         {
             DatumId = datumId;
-            IdNumber = idNumber;
             _documentPath = documentPath;
         }
 
@@ -85,9 +76,7 @@ namespace TelegramDataEnrichment.Sessions
         {
             var stream = File.OpenRead(_documentPath);
             var docContent = new StreamContent(stream);
-            var result = Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
-            MessageId = result.result.message_id;
-            return result;
+            return Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
         }
     }
 }

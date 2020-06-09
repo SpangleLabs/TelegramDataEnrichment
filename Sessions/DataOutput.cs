@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace TelegramDataEnrichment.Sessions
 {
@@ -65,15 +66,11 @@ namespace TelegramDataEnrichment.Sessions
         public override List<Datum> ListCompleted()
         {
             var directories = Directory.GetDirectories(_dataDirectory);
-            var datumId = 0;
             var data = new List<Datum>();
             foreach (var directory in directories)
             {
                 var files = Directory.GetFiles(directory);
-                foreach (var file in files)
-                {
-                    data.Add(Datum.FromFile(file, datumId++));
-                }
+                data.AddRange(files.Select(Datum.FromFile));
             }
             return data;
         }

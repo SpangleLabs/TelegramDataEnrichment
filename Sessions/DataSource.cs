@@ -55,14 +55,8 @@ namespace TelegramDataEnrichment.Sessions
         public override List<Datum> ListData()
         {
             var files = Directory.GetFiles(_directory);
-            var data = new List<Datum>();
-            var datumId = 0;
-            foreach (var file in files)
-            {
-                data.Add(Datum.FromFile(file, datumId++));
-            }
 
-            return data;
+            return files.Select(Datum.FromFile).ToList();
         }
 
         public override DataSourceData ToData()
