@@ -102,7 +102,7 @@ namespace TelegramDataEnrichment
 
         protected override InlineKeyboardMarkup Keyboard()
         {
-            var inactiveSessions = _sessions.FindAll(s => !s.IsActive);
+            var inactiveSessions = _sessions.FindAll(s => !s.IsActive && s.IncompleteData().Count > 0);
             var keyboard = new InlineKeyboardMarkup();
             var row = 0;
             foreach (var session in inactiveSessions)
