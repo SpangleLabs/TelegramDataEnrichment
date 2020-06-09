@@ -15,10 +15,11 @@ namespace TelegramDataEnrichment.Sessions
         public abstract List<Datum> RemoveCompleted(List<Datum> data);
 
         public abstract List<Datum> ListCompleted();
-        
+
         public abstract DataOutputData ToData();
         public abstract void HandleDatum(Datum datum, string tag);
         public abstract void HandleDatumDone(Datum datum);
+        public abstract List<string> GetOptionsForData(Datum datum);
 
         public class DataOutputData
         {
@@ -72,6 +73,7 @@ namespace TelegramDataEnrichment.Sessions
                 var files = Directory.GetFiles(directory);
                 data.AddRange(files.Select(Datum.FromFile));
             }
+
             return data;
         }
 
@@ -96,6 +98,18 @@ namespace TelegramDataEnrichment.Sessions
         public override void HandleDatumDone(Datum datum)
         {
             return;
+        }
+
+        public override List<string> GetOptionsForData(Datum datum)
+        {
+            var directories = Directory.GetDirectories(_dataDirectory);
+            foreach (var directory in directories)
+            {
+                var files = Directory.GetFiles(directory);
+                if (files.Contains(datum.DatumId)) return new List<string> {Path.GetDirectoryName(directory)};
+            }
+
+            return new List<string>();
         }
     }
 }

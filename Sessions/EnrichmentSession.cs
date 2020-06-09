@@ -197,12 +197,17 @@ namespace TelegramDataEnrichment.Sessions
             var numOptionsOnPage = optionsOnPage.Count;
             var columns = ((numOptionsOnPage - 1) / maxRows) + 1;
 
+            var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
+            var selectedOptions = AllData().Where(d => d.DatumId.Equals(datumId)).SelectMany(d => _dataOutput.GetOptionsForData(d)).ToList();
+
             var buttonId = 0;
             var rowId = 0;
             foreach (var option in optionsOnPage)
             {
                 var optionId = _idIndex.GetOptionIdByOption(option);
-                keyboard.addCallbackButton(option, $"{CallbackName}:{Id}:{callbackId}:{optionId}", rowId);
+                var selected = selectedOptions.Contains(option) ? "✔ " : "";
+                var text = $"{selected}{option}";
+                keyboard.addCallbackButton(text, $"{CallbackName}:{Id}:{callbackId}:{optionId}", rowId);
                 buttonId++;
                 if (buttonId % columns == 0)
                 {
