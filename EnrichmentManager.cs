@@ -83,9 +83,12 @@ namespace TelegramDataEnrichment
                 if (callback.data.StartsWith(EnrichmentSession.CallbackName + ":"))
                 {
                     var sessionId = callback.data.Split(':')[1];
-                    _sessions.Where(s => s.IsActive && s.Id.ToString().Equals(sessionId))
-                        .ToList()
-                        .ForEach(s => s.HandleCallback(callback.data));
+                    var matchingSessions = _sessions.Where(s => s.IsActive && s.Id.ToString().Equals(sessionId)).ToList();
+                    foreach (var session in matchingSessions)
+                    {
+                        session.HandleCallback(callback.data);
+                        _database.SaveSession(session);
+                    }
                 }
                 else
                 {
