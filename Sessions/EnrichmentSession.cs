@@ -9,6 +9,8 @@ namespace TelegramDataEnrichment.Sessions
     {
         public const string CallbackName = "enrich";
         private const string CallbackDone = "done";
+        private const string CallbackPrev = "prev";
+        private const string CallbackNext = "next";
         public bool IsActive { get; private set; }
         public string Name { get; }
         public int Id { get; }
@@ -70,7 +72,8 @@ namespace TelegramDataEnrichment.Sessions
             
             var callbackIdToMessageId = data.CallbackIdToMessageId ?? new Dictionary<int, long>();
             var callbackIdToDatumId = data.CallbackIdToDatumId ?? new Dictionary<int, string>();
-            _datumIdIndex = new DatumIdIndex(callbackIdToMessageId, callbackIdToDatumId);
+            var messageIdToPage = data.PageToMessageId ?? new Dictionary<long, int>();
+            _datumIdIndex = new DatumIdIndex(callbackIdToMessageId, callbackIdToDatumId, messageIdToPage);
         }
 
         public void Start()
@@ -99,6 +102,20 @@ namespace TelegramDataEnrichment.Sessions
                     RemoveMessage(datum);
                 }
                 PostMessages();
+                return;
+            }
+
+            if (optionId.Equals(CallbackPrev))
+            {
+                _datumIdIndex.PrevPageByCallbackId(callbackId);
+                UpdateKeyboard(callbackId);
+                return;
+            }
+
+            if (optionId.Equals(CallbackNext))
+            {
+                _datumIdIndex.NextPageByCallbackId(callbackId);
+                UpdateKeyboard(callbackId);
                 return;
             }
 
@@ -144,22 +161,57 @@ namespace TelegramDataEnrichment.Sessions
             }
         }
 
-        private InlineKeyboardMarkup Keyboard(int datumId)
+        private InlineKeyboardMarkup Keyboard(int callbackId)
         {
+            const int maxCols = 3;
+            const int maxRows = 5;
+            var perPage = maxCols * maxRows;
+            
             var keyboard = new InlineKeyboardMarkup();
+            var currentPage = _datumIdIndex.GetPageFromCallbackId(callbackId);
+            var totalOptions = _options.Count;
+            var pages = ((totalOptions - 1) / perPage) + 1;
+            var optionsOnPage = _options.Skip(perPage * currentPage).Take(perPage).ToList();
+            var numOptionsOnPage = optionsOnPage.Count;
+            var columns = ((numOptionsOnPage - 1) / maxRows) + 1;
+            
             var optionId = 0;
-            foreach (var option in _options)
+            var rowId = 0;
+            foreach (var option in optionsOnPage)
             {
-                keyboard.addCallbackButton(option, $"{CallbackName}:{Id}:{datumId}:{optionId}", optionId);
+                keyboard.addCallbackButton(option, $"{CallbackName}:{Id}:{callbackId}:{optionId}", rowId);
                 optionId++;
+                if (optionId % columns == 0)
+                {
+                    rowId++;
+                }
             }
 
-            if (_canSelectMultipleOptions)
+            if (pages > 1)
             {
-                keyboard.addCallbackButton("*Done*", $"{CallbackName}:{Id}:{datumId}:{CallbackDone}", optionId);
+                if (currentPage > 0)
+                {
+                    keyboard.addCallbackButton("Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
+                }
+
+                if (_canSelectMultipleOptions)
+                {
+                    keyboard.addCallbackButton("*Done*", $"{CallbackName}:{Id}:{callbackId}:{CallbackDone}", rowId);
+                }
+
+                if (currentPage + 1 < pages)
+                {
+                    keyboard.addCallbackButton("Next page", $"{CallbackName}:{Id}:{callbackId}:{CallbackNext}", rowId);
+                }
             }
 
             return keyboard;
+        }
+
+        private void UpdateKeyboard(int callbackId)
+        {
+            var messageId = _datumIdIndex.GetMessageIdFromCallbackId(callbackId);
+            Methods.editMessageReplyMarkup(_chatId, messageId, keyboard: Keyboard(callbackId));
         }
 
         public void Stop()
@@ -212,7 +264,8 @@ namespace TelegramDataEnrichment.Sessions
                 CanAddOptions = _canAddOptions,
                 CanSelectMultipleOptions = _canSelectMultipleOptions,
                 CallbackIdToMessageId = _datumIdIndex.CallbackIdToMessageId,
-                CallbackIdToDatumId = _datumIdIndex.CallbackIdToDatumId
+                CallbackIdToDatumId = _datumIdIndex.CallbackIdToDatumId,
+                PageToMessageId = _datumIdIndex.MessageIdToPage
             };
         }
 
@@ -231,6 +284,7 @@ namespace TelegramDataEnrichment.Sessions
             public bool CanSelectMultipleOptions { get; set; }
             public Dictionary<int, long> CallbackIdToMessageId { get; set; }
             public Dictionary<int, string> CallbackIdToDatumId { get; set; }
+            public Dictionary<long, int> PageToMessageId { get; set; }
         }
 
         private class DatumIdIndex
@@ -238,18 +292,28 @@ namespace TelegramDataEnrichment.Sessions
             public Dictionary<int, long> CallbackIdToMessageId { get; }
             public Dictionary<int, string> CallbackIdToDatumId { get; }
             private readonly Dictionary<string, int> _datumIdToCallbackId;
+            public Dictionary<long, int> MessageIdToPage { get; }
             private int _nextCallbackId;
 
             public DatumIdIndex()
             {
+                CallbackIdToMessageId = new Dictionary<int, long>();
+                CallbackIdToDatumId = new Dictionary<int, string>();
+                _datumIdToCallbackId = new Dictionary<string, int>();
+                MessageIdToPage = new Dictionary<long, int>();
                 _nextCallbackId = 0;
             }
 
-            public DatumIdIndex(Dictionary<int, long> callbackIdToMessageId, Dictionary<int, string> callbackIdToDatumId)
+            public DatumIdIndex(
+                Dictionary<int, long> callbackIdToMessageId, 
+                Dictionary<int, string> callbackIdToDatumId,
+                Dictionary<long, int> messageIdToPage
+                )
             {
                 CallbackIdToMessageId = callbackIdToMessageId;
                 CallbackIdToDatumId = callbackIdToDatumId;
-                _nextCallbackId = callbackIdToDatumId.Keys.Max();
+                MessageIdToPage = messageIdToPage;
+                _nextCallbackId = callbackIdToDatumId.Count == 0 ? 0 : callbackIdToDatumId.Keys.Max();
                 _datumIdToCallbackId = callbackIdToDatumId.ToDictionary((i) => i.Value, (i) => i.Key);
             }
 
@@ -264,11 +328,14 @@ namespace TelegramDataEnrichment.Sessions
             public void AddMessageId(long messageId, int callbackId)
             {
                 CallbackIdToMessageId.Add(callbackId, messageId);
+                MessageIdToPage.Add(messageId, 0);
             }
 
             public void RemoveMessageByCallbackId(int callbackId)
             {
+                var messageId = CallbackIdToMessageId[callbackId];
                 CallbackIdToMessageId.Remove(callbackId);
+                MessageIdToPage.Remove(messageId);
             }
 
             public string GetDatumIdFromCallbackId(int callbackId)
@@ -286,6 +353,28 @@ namespace TelegramDataEnrichment.Sessions
                 return CallbackIdToMessageId[callbackId];
             }
 
+            public int GetPageFromCallbackId(int callbackId)
+            {
+                if (!CallbackIdToMessageId.ContainsKey(callbackId)) return 0;
+                var messageId = CallbackIdToMessageId[callbackId];
+                return MessageIdToPage.ContainsKey(messageId) ? MessageIdToPage[messageId] : 0;
+
+            }
+
+            public void NextPageByCallbackId(int callbackId)
+            {
+                var messageId = CallbackIdToMessageId[callbackId];
+                var currentPage = MessageIdToPage[messageId];
+                MessageIdToPage[messageId] = currentPage + 1;
+            }
+
+            public void PrevPageByCallbackId(int callbackId)
+            {
+                var messageId = CallbackIdToMessageId[callbackId];
+                var currentPage = MessageIdToPage[messageId];
+                MessageIdToPage[messageId] = Math.Max(currentPage - 1, 0);
+            }
+
             public int MessageCount()
             {
                 return CallbackIdToMessageId.Count;
@@ -299,6 +388,7 @@ namespace TelegramDataEnrichment.Sessions
             public void ClearMessages()
             {
                 CallbackIdToMessageId.Clear();
+                MessageIdToPage.Clear();
             }
         }
     }
