@@ -77,13 +77,23 @@ namespace TelegramDataEnrichment
                 _database.SavePartial(_partialSession);
                 menu = CheckPartialCompletionAndGetNextMenu();
             }
-
+            
             if (menu == null)
             {
-                menu = new UnknownMenu(callback.data);
+                if (callback.data.StartsWith(EnrichmentSession.CallbackName + ":"))
+                {
+                    var sessionId = callback.data.Split(':')[1];
+                    _sessions.Where(s => s.IsActive && s.Id.ToString().Equals(sessionId))
+                        .ToList()
+                        .ForEach(s => s.HandleCallback(callback.data));
+                }
+                else
+                {
+                    menu = new UnknownMenu(callback.data);
+                }
             }
 
-            menu.EditMessage(
+            menu?.EditMessage(
                 callback.message.chat.id,
                 callback.message.message_id
             );
