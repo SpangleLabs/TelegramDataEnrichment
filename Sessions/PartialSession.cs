@@ -67,6 +67,7 @@ namespace TelegramDataEnrichment.Sessions
             {
                 return SessionParts.DataOutput;
             }
+            if (!_dataOutput.AllowMultipleOptions()) _canSelectMultipleOptions = false;
 
             if (_options == null) return SessionParts.Options;
             if (_canAddOptions == null) return SessionParts.OptionsExpandable;

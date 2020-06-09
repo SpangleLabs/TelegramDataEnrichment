@@ -86,6 +86,11 @@ namespace TelegramDataEnrichment.Sessions
             }
         }
 
+        public bool AllowMultipleOptions()
+        {
+            return _type != DataOutput.DataOutputTypes.SubDirectory;
+        }
+
         public DataOutput BuildOutput(DataSource.DataSourceData sourceData)
         {
             if (_type == null)
