@@ -63,7 +63,14 @@ namespace TelegramDataEnrichment
                 text += "Cancelled session creation.\n";
             }
 
-            text += $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.";
+            text += $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.\n";
+            foreach (var session in _sessions)
+            {
+                var doneData = session.CompletedData().Count;
+                var allData = session.AllData().Count;
+                var percentage = (double)doneData / allData;
+                text += $"- {session.Name}: {doneData}/{allData} {percentage:P}\n";
+            }
             return text;
         }
 
