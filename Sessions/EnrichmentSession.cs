@@ -22,7 +22,7 @@ namespace TelegramDataEnrichment.Sessions
         private readonly List<string> _options;
         private readonly bool _canAddOptions;
         private readonly bool _canSelectMultipleOptions;
-        private readonly DatumIdIndex _datumIdIndex;
+        private readonly SessionIdIndex _idIndex;
 
         public EnrichmentSession(
             int id,
@@ -48,7 +48,7 @@ namespace TelegramDataEnrichment.Sessions
             _options = options;
             _canAddOptions = canAddOptions;
             _canSelectMultipleOptions = canSelectMultipleOptions;
-            _datumIdIndex = new DatumIdIndex();
+            _idIndex = new SessionIdIndex();
         }
 
         public EnrichmentSession(SessionData data)
@@ -69,11 +69,7 @@ namespace TelegramDataEnrichment.Sessions
             _options = data.Options;
             _canAddOptions = data.CanAddOptions;
             _canSelectMultipleOptions = data.CanSelectMultipleOptions;
-            
-            var callbackIdToMessageId = data.CallbackIdToMessageId ?? new Dictionary<int, long>();
-            var callbackIdToDatumId = data.CallbackIdToDatumId ?? new Dictionary<int, string>();
-            var messageIdToPage = data.PageToMessageId ?? new Dictionary<long, int>();
-            _datumIdIndex = new DatumIdIndex(callbackIdToMessageId, callbackIdToDatumId, messageIdToPage);
+            _idIndex = new SessionIdIndex(data.IdIndex);
         }
 
         public void Start()
@@ -89,7 +85,7 @@ namespace TelegramDataEnrichment.Sessions
             if (!Id.ToString().Equals(sessionId)) return;
             
             var callbackId = int.Parse(split[2]);
-            var datumId = _datumIdIndex.GetDatumIdFromCallbackId(callbackId);
+            var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
             var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
             
             
@@ -107,14 +103,14 @@ namespace TelegramDataEnrichment.Sessions
 
             if (optionId.Equals(CallbackPrev))
             {
-                _datumIdIndex.PrevPageByCallbackId(callbackId);
+                _idIndex.PrevPageByCallbackId(callbackId);
                 UpdateKeyboard(callbackId);
                 return;
             }
 
             if (optionId.Equals(CallbackNext))
             {
-                _datumIdIndex.NextPageByCallbackId(callbackId);
+                _idIndex.NextPageByCallbackId(callbackId);
                 UpdateKeyboard(callbackId);
                 return;
             }
@@ -130,22 +126,22 @@ namespace TelegramDataEnrichment.Sessions
 
         private void RemoveMessage(Datum datum)
         {
-            var callbackId = _datumIdIndex.GetCallbackIdFromDatumId(datum.DatumId);
-            var messageId = _datumIdIndex.GetMessageIdFromCallbackId(callbackId);
+            var callbackId = _idIndex.GetCallbackIdFromDatumId(datum.DatumId);
+            var messageId = _idIndex.GetMessageIdFromCallbackId(callbackId);
             Methods.deleteMessage(_chatId, messageId);
-            _datumIdIndex.RemoveMessageByCallbackId(callbackId);
+            _idIndex.RemoveMessageByCallbackId(callbackId);
         }
 
         private void PostMessages()
         {
-            if (_datumIdIndex.MessageCount() >= _batchCount) return;
+            if (_idIndex.MessageCount() >= _batchCount) return;
             var incompleteData = IncompleteData();
             if (_isRandomOrder)
             {
                 incompleteData = incompleteData.OrderBy(a => Guid.NewGuid()).ToList();
             }
 
-            var postData = incompleteData.Take(_batchCount - _datumIdIndex.MessageCount()).ToList();
+            var postData = incompleteData.Take(_batchCount - _idIndex.MessageCount()).ToList();
             if (postData.Count == 0)
             {
                 Methods.sendMessage(_chatId, "Enrichment session complete!");
@@ -154,10 +150,10 @@ namespace TelegramDataEnrichment.Sessions
             }
             foreach (var datum in postData)
             {
-                var callbackId = _datumIdIndex.GetCallbackIdFromDatumId(datum.DatumId);
+                var callbackId = _idIndex.GetCallbackIdFromDatumId(datum.DatumId);
                 var keyboard = Keyboard(callbackId);
                 var result = datum.Post(_chatId, keyboard);
-                _datumIdIndex.AddMessageId(result.result.message_id, callbackId);
+                _idIndex.AddMessageId(result.result.message_id, callbackId);
             }
         }
 
@@ -168,7 +164,7 @@ namespace TelegramDataEnrichment.Sessions
             var perPage = maxCols * maxRows;
             
             var keyboard = new InlineKeyboardMarkup();
-            var currentPage = _datumIdIndex.GetPageFromCallbackId(callbackId);
+            var currentPage = _idIndex.GetPageFromCallbackId(callbackId);
             var totalOptions = _options.Count;
             var pages = ((totalOptions - 1) / perPage) + 1;
             var optionsOnPage = _options.Skip(perPage * currentPage).Take(perPage).ToList();
@@ -208,18 +204,18 @@ namespace TelegramDataEnrichment.Sessions
 
         private void UpdateKeyboard(int callbackId)
         {
-            var messageId = _datumIdIndex.GetMessageIdFromCallbackId(callbackId);
+            var messageId = _idIndex.GetMessageIdFromCallbackId(callbackId);
             Methods.editMessageReplyMarkup(_chatId, messageId, keyboard: Keyboard(callbackId));
         }
 
         public void Stop()
         {
             IsActive = false;
-            foreach (var messageId in _datumIdIndex.MessageIds())
+            foreach (var messageId in _idIndex.MessageIds())
             {
                 Methods.deleteMessage(_chatId, messageId);
             }
-            _datumIdIndex.ClearMessages();
+            _idIndex.ClearMessages();
         }
 
         public List<Datum> AllData()
@@ -228,21 +224,21 @@ namespace TelegramDataEnrichment.Sessions
             var completeData = _dataOutput.ListCompleted();
             var notInSourceData = completeData.Where(d => sourceData.All(d2 => d2.DatumId != d.DatumId));
             var allData = sourceData.Concat(notInSourceData).ToList();
-            allData.ForEach(d => _datumIdIndex.AddDatumId(d.DatumId));
+            allData.ForEach(d => _idIndex.AddDatumId(d.DatumId));
             return allData;
         }
 
         public List<Datum> IncompleteData()
         {
             var incompleteData = _dataOutput.RemoveCompleted(_dataSource.ListData());
-            incompleteData.ForEach(d => _datumIdIndex.AddDatumId(d.DatumId));
+            incompleteData.ForEach(d => _idIndex.AddDatumId(d.DatumId));
             return incompleteData;
         }
 
         public List<Datum> CompletedData()
         {
             var completeData = _dataOutput.ListCompleted();
-            completeData.ForEach(d => _datumIdIndex.AddDatumId(d.DatumId));
+            completeData.ForEach(d => _idIndex.AddDatumId(d.DatumId));
             return completeData;
         }
 
@@ -261,9 +257,7 @@ namespace TelegramDataEnrichment.Sessions
                 Options = _options,
                 CanAddOptions = _canAddOptions,
                 CanSelectMultipleOptions = _canSelectMultipleOptions,
-                CallbackIdToMessageId = _datumIdIndex.CallbackIdToMessageId,
-                CallbackIdToDatumId = _datumIdIndex.CallbackIdToDatumId,
-                PageToMessageId = _datumIdIndex.MessageIdToPage
+                IdIndex = _idIndex.ToData()
             };
         }
 
@@ -280,114 +274,7 @@ namespace TelegramDataEnrichment.Sessions
             public List<string> Options { get; set; }
             public bool CanAddOptions { get; set; }
             public bool CanSelectMultipleOptions { get; set; }
-            public Dictionary<int, long> CallbackIdToMessageId { get; set; }
-            public Dictionary<int, string> CallbackIdToDatumId { get; set; }
-            public Dictionary<long, int> PageToMessageId { get; set; }
-        }
-
-        private class DatumIdIndex
-        {
-            public Dictionary<int, long> CallbackIdToMessageId { get; }
-            public Dictionary<int, string> CallbackIdToDatumId { get; }
-            private readonly Dictionary<string, int> _datumIdToCallbackId;
-            public Dictionary<long, int> MessageIdToPage { get; }
-            private int _nextCallbackId;
-
-            public DatumIdIndex()
-            {
-                CallbackIdToMessageId = new Dictionary<int, long>();
-                CallbackIdToDatumId = new Dictionary<int, string>();
-                _datumIdToCallbackId = new Dictionary<string, int>();
-                MessageIdToPage = new Dictionary<long, int>();
-                _nextCallbackId = 0;
-            }
-
-            public DatumIdIndex(
-                Dictionary<int, long> callbackIdToMessageId, 
-                Dictionary<int, string> callbackIdToDatumId,
-                Dictionary<long, int> messageIdToPage
-                )
-            {
-                CallbackIdToMessageId = callbackIdToMessageId;
-                CallbackIdToDatumId = callbackIdToDatumId;
-                MessageIdToPage = messageIdToPage;
-                _nextCallbackId = callbackIdToDatumId.Count == 0 ? 0 : callbackIdToDatumId.Keys.Max() + 1;
-                _datumIdToCallbackId = callbackIdToDatumId.ToDictionary((i) => i.Value, (i) => i.Key);
-            }
-
-            public void AddDatumId(string datumId)
-            {
-                if (_datumIdToCallbackId.ContainsKey(datumId) || CallbackIdToDatumId.ContainsValue(datumId)) return;
-                var callbackId = _nextCallbackId++;
-                CallbackIdToDatumId.Add(callbackId, datumId);
-                _datumIdToCallbackId.Add(datumId, callbackId);
-            }
-
-            public void AddMessageId(long messageId, int callbackId)
-            {
-                CallbackIdToMessageId.Add(callbackId, messageId);
-                MessageIdToPage.Add(messageId, 0);
-            }
-
-            public void RemoveMessageByCallbackId(int callbackId)
-            {
-                var messageId = CallbackIdToMessageId[callbackId];
-                CallbackIdToMessageId.Remove(callbackId);
-                MessageIdToPage.Remove(messageId);
-            }
-
-            public string GetDatumIdFromCallbackId(int callbackId)
-            {
-                return CallbackIdToDatumId[callbackId];
-            }
-
-            public int GetCallbackIdFromDatumId(string datumId)
-            {
-                return _datumIdToCallbackId[datumId];
-            }
-
-            public long GetMessageIdFromCallbackId(int callbackId)
-            {
-                return CallbackIdToMessageId[callbackId];
-            }
-
-            public int GetPageFromCallbackId(int callbackId)
-            {
-                if (!CallbackIdToMessageId.ContainsKey(callbackId)) return 0;
-                var messageId = CallbackIdToMessageId[callbackId];
-                return MessageIdToPage.ContainsKey(messageId) ? MessageIdToPage[messageId] : 0;
-
-            }
-
-            public void NextPageByCallbackId(int callbackId)
-            {
-                var messageId = CallbackIdToMessageId[callbackId];
-                var currentPage = MessageIdToPage[messageId];
-                MessageIdToPage[messageId] = currentPage + 1;
-            }
-
-            public void PrevPageByCallbackId(int callbackId)
-            {
-                var messageId = CallbackIdToMessageId[callbackId];
-                var currentPage = MessageIdToPage[messageId];
-                MessageIdToPage[messageId] = Math.Max(currentPage - 1, 0);
-            }
-
-            public int MessageCount()
-            {
-                return CallbackIdToMessageId.Count;
-            }
-
-            public List<long> MessageIds()
-            {
-                return CallbackIdToMessageId.Values.ToList();
-            }
-
-            public void ClearMessages()
-            {
-                CallbackIdToMessageId.Clear();
-                MessageIdToPage.Clear();
-            }
+            public SessionIdIndex.IdIndexData IdIndex { get; set; }
         }
     }
 }
