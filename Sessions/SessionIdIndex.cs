@@ -127,6 +127,12 @@ namespace TelegramDataEnrichment.Sessions
             return _optionToOptionId[option];
         }
 
+        public bool DatumIdHasMessage(DatumId datumId)
+        {
+            var callbackId = _datumIdToCallbackId[datumId.ToString()];
+            return _callbackIdToMessageId.ContainsKey(callbackId);
+        }
+
         public void NextPageByCallbackId(int callbackId)
         {
             var messageId = _callbackIdToMessageId[callbackId];

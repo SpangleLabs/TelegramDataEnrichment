@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -162,13 +162,14 @@ namespace TelegramDataEnrichment.Sessions
         {
             if (_idIndex.MessageCount() >= _batchCount) return;
             var incompleteData = IncompleteData();
+            var unpostedData = incompleteData.Where(d => !_idIndex.DatumIdHasMessage(d.DatumId));
             if (_isRandomOrder)
             {
-                incompleteData = incompleteData.OrderBy(a => Guid.NewGuid()).ToList();
+                unpostedData = unpostedData.OrderBy(a => Guid.NewGuid()).ToList();
             }
 
-            var postData = incompleteData.Take(_batchCount - _idIndex.MessageCount()).ToList();
-            if (postData.Count == 0)
+            var postData = unpostedData.Take(_batchCount - _idIndex.MessageCount()).ToList();
+            if (incompleteData.Count == 0)
             {
                 Methods.sendMessage(_chatId, "Enrichment session complete!");
                 Stop();
