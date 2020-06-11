@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net.Http;
 using DreadBot;
+using Newtonsoft.Json.Linq;
 using File = System.IO.File;
 
 namespace TelegramDataEnrichment.Sessions
