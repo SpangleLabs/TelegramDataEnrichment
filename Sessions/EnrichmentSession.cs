@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -112,7 +112,7 @@ namespace TelegramDataEnrichment.Sessions
             MarkDatum(datumId, option);
         }
 
-        private void MarkDatum(string datumId, string option)
+        private void MarkDatum(DatumId datumId, string option)
         {
             var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
             foreach (var datum in matchingData)
@@ -123,7 +123,7 @@ namespace TelegramDataEnrichment.Sessions
             PostMessages();
         }
 
-        private void MarkDatumDone(string datumId)
+        private void MarkDatumDone(DatumId datumId)
         {
             var matchingData = IncompleteData().Where(d => d.DatumId.Equals(datumId)).ToList();
             foreach (var datum in matchingData)
@@ -254,7 +254,7 @@ namespace TelegramDataEnrichment.Sessions
         {
             var sourceData = _dataSource.ListData();
             var completeData = _dataOutput.ListCompleted();
-            var notInSourceData = completeData.Where(d => sourceData.All(d2 => d2.DatumId != d.DatumId));
+            var notInSourceData = completeData.Where(d => sourceData.All(d2 => !Equals(d2, d)));
             var allData = sourceData.Concat(notInSourceData).ToList();
             allData.ForEach(d => _idIndex.AddDatumId(d.DatumId));
             return allData;

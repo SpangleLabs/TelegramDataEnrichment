@@ -58,12 +58,13 @@ namespace TelegramDataEnrichment.Sessions
             _optionIdToOption = _optionToOptionId.ToDictionary((i) => i.Value, (i) => i.Key);
         }
 
-        public void AddDatumId(string datumId)
+        public void AddDatumId(DatumId datumId)
         {
-            if (_datumIdToCallbackId.ContainsKey(datumId) || _callbackIdToDatumId.ContainsValue(datumId)) return;
+            var datumStr = datumId.ToString();
+            if (_datumIdToCallbackId.ContainsKey(datumStr) || _callbackIdToDatumId.ContainsValue(datumStr)) return;
             var callbackId = _nextCallbackId++;
-            _callbackIdToDatumId.Add(callbackId, datumId);
-            _datumIdToCallbackId.Add(datumId, callbackId);
+            _callbackIdToDatumId.Add(callbackId, datumStr);
+            _datumIdToCallbackId.Add(datumStr, callbackId);
         }
 
         public void AddMessageId(long messageId, int callbackId)
@@ -89,14 +90,14 @@ namespace TelegramDataEnrichment.Sessions
             _messageIdToPage.Remove(messageId);
         }
 
-        public string GetDatumIdFromCallbackId(int callbackId)
+        public DatumId GetDatumIdFromCallbackId(int callbackId)
         {
-            return _callbackIdToDatumId[callbackId];
+            return new DatumId(_callbackIdToDatumId[callbackId]);
         }
 
-        public int GetCallbackIdFromDatumId(string datumId)
+        public int GetCallbackIdFromDatumId(DatumId datumId)
         {
-            return _datumIdToCallbackId[datumId];
+            return _datumIdToCallbackId[datumId.ToString()];
         }
 
         public long GetMessageIdFromCallbackId(int callbackId)

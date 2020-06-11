@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -88,25 +88,27 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void HandleDatum(Datum datum, string tag)
         {
+            var fileDatum = (FileDatum) datum;
             Directory.CreateDirectory($"{_dataDirectory}/{tag}");
             File.Move(
-                datum.DatumId,
-                $"{_dataDirectory}/{tag}/{Path.GetFileName(datum.DatumId)}"
+                fileDatum.FileName,
+                $"{_dataDirectory}/{tag}/{Path.GetFileName(fileDatum.FileName)}"
             );
         }
 
         public override void HandleDatumDone(Datum datum)
         {
-            return;
         }
 
         public override List<string> GetOptionsForData(Datum datum)
         {
+            if(!(datum is FileDatum fileDatum)) return new List<string>();
             var directories = Directory.GetDirectories(_dataDirectory);
+            var fileName = Path.GetFileName(fileDatum.FileName);
             foreach (var directory in directories)
             {
-                var files = Directory.GetFiles(directory);
-                if (files.Contains(datum.DatumId)) return new List<string> {Path.GetDirectoryName(directory)};
+                var files = Directory.GetFiles(directory).Select(Path.GetFileName);
+                if (files.Contains(fileName)) return new List<string> {Path.GetDirectoryName(directory)};
             }
 
             return new List<string>();
