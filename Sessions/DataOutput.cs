@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -50,7 +50,7 @@ namespace TelegramDataEnrichment.Sessions
             switch (dataSourceType)
             {
                 case DataSourceTypes.DirectorySource:
-                    return new List<DataOutputTypes> {DataOutputTypes.SubDirectory};
+                    return new List<DataOutputTypes> {DataOutputTypes.SubDirectory, DataOutputTypes.Json};
                 default:
                     throw new ArgumentOutOfRangeException(nameof(dataSourceType), dataSourceType, null);
             }
