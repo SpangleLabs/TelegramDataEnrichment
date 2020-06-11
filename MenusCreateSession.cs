@@ -11,7 +11,10 @@ namespace TelegramDataEnrichment
 
         protected override string Text()
         {
-            return "Creating a new session.\nWhat would you like to name the session?";
+            return 
+                "Creating a new session.\n" +
+                "What would you like to name the session?\n" +
+                "(Note that if names clash, you may find sessions thinking they have already enriched data points)";
         }
 
         protected override InlineKeyboardMarkup Keyboard()
