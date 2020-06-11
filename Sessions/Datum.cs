@@ -76,6 +76,16 @@ namespace TelegramDataEnrichment.Sessions
                     return new DocumentDatum(datumId, fileName);
             }
         }
+
+        public static JsonDatum FromJson(DatumId datumId, JObject jsonData)
+        {
+            return new JsonDatum(datumId, jsonData);
+        }
+
+        public static Datum FromJson(DatumId datumId, JObject jsonData, string textKey)
+        {
+            return new JsonTextDatum(datumId, jsonData, textKey);
+        }
     }
 
     public abstract class FileDatum : Datum
@@ -128,6 +138,36 @@ namespace TelegramDataEnrichment.Sessions
             var stream = File.OpenRead(FileName);
             var docContent = new StreamContent(stream);
             return Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
+        }
+    }
+
+    public class JsonDatum : Datum
+    {
+        private readonly JObject _jsonData;
+
+        public JsonDatum(DatumId datumId, JObject jsonData) : base(datumId)
+        {
+            _jsonData = jsonData;
+        }
+
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
+        {
+            return Methods.sendMessage(chatId, _jsonData.ToString(), keyboard: keyboard);
+        }
+    }
+
+    public class JsonTextDatum : JsonDatum
+    {
+        private readonly string _text;
+
+        public JsonTextDatum(DatumId datumId, JObject jsonData, string textPath) : base(datumId, jsonData)
+        {
+            _text = jsonData.SelectToken(textPath)?.ToString();
+        }
+
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
+        {
+            return Methods.sendMessage(chatId, _text, keyboard: keyboard);
         }
     }
 }
