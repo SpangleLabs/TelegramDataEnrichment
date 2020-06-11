@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DreadBot;
 using TelegramDataEnrichment.Sessions;
@@ -119,6 +119,7 @@ namespace TelegramDataEnrichment
     {
         private readonly List<DataOutput.DataOutputTypes> _validOutputTypes;
         public const string CallbackSubDirectory = "session_s_output:subdir";
+        public const string CallbackJson = "session_s_output:json";
 
         public CreateSessionOutputTypeMenu(List<DataOutput.DataOutputTypes> validOutputTypes)
         {
@@ -147,6 +148,9 @@ namespace TelegramDataEnrichment
                 {
                     case DataOutput.DataOutputTypes.SubDirectory:
                         keyboard.addCallbackButton("Move to subdirectories", CallbackSubDirectory, 0);
+                        break;
+                    case DataOutput.DataOutputTypes.Json:
+                        keyboard.addCallbackButton("Save to JSON file", CallbackJson, 1);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
