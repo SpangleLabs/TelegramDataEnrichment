@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -161,27 +161,35 @@ namespace TelegramDataEnrichment.Sessions
 
         public override void HandleDatum(Datum datum, string option)
         {
-            _handler.ValidateDatumEntry(datum.DatumId);
-
-            var optionsList = _handler.GetOptionsList(datum.DatumId);
-            optionsList.Add(option);
+            var dataFile = _handler.SetupDatumEntry(datum.DatumId);
             
-            _handler.WriteFile();
+            var optionsList = _handler.GetOptionsList(dataFile, datum.DatumId);
+            if (optionsList.Any(t => t.ToString().Equals(option)))
+            {
+                optionsList.Where(t => t.ToString().Equals(option)).ToList().ForEach(t => optionsList.Remove(t));
+            }
+            else
+            {
+                optionsList.Add(option);
+            }
+
+            _handler.WriteFile(dataFile);
         }
 
         public override void HandleDatumDone(Datum datum)
         {
-            _handler.ValidateDatumEntry(datum.DatumId);
-
-            var sessionsCompleteList = _handler.GetSessionsCompletedList(datum.DatumId);
+            var dataFile = _handler.SetupDatumEntry(datum.DatumId);
+            
+            var sessionsCompleteList = _handler.GetSessionsCompletedList(dataFile, datum.DatumId);
             sessionsCompleteList.Add(_sessionName);
             
-            _handler.WriteFile();
+            _handler.WriteFile(dataFile);
         }
 
         public override List<string> GetOptionsForData(Datum datum)
         {
-            return _handler.GetOptionsList(datum.DatumId).ToObject<List<string>>();
+            var dataFile = _handler.SetupDatumEntry(datum.DatumId);
+            return _handler.GetOptionsList(dataFile, datum.DatumId).ToObject<List<string>>();
         }
 
         class JsonDataOutputException : Exception
@@ -242,7 +250,7 @@ namespace TelegramDataEnrichment.Sessions
                 }
             }
 
-            internal void ValidateDatumEntry(DatumId datumId)
+            internal JObject SetupDatumEntry(DatumId datumId)
             {
                 var dataFile = ParseJsonFile();
                 JObject datumEntry;
@@ -261,7 +269,7 @@ namespace TelegramDataEnrichment.Sessions
                 if (datumEntry == null)
                 {
                     datumEntry = new JObject();
-                    dataFile[datumId] = datumEntry;
+                    dataFile[datumId.ToString()] = datumEntry;
                 }
 
                 JArray sessionsDoneList;
@@ -305,17 +313,17 @@ namespace TelegramDataEnrichment.Sessions
                     tagList = new JArray();
                     datumEntry[_tagsKey] = tagList;
                 }
+
+                return dataFile;
             }
 
-            internal JArray GetOptionsList(DatumId datumId)
+            internal JArray GetOptionsList(JObject dataFile, DatumId datumId)
             {
-                var dataFile = ParseJsonFile();
                 return (JArray) dataFile[datumId.ToString()]?[_tagsKey];
             }
 
-            internal JArray GetSessionsCompletedList(DatumId datumId)
+            internal JArray GetSessionsCompletedList(JObject dataFile, DatumId datumId)
             {
-                var dataFile = ParseJsonFile();
                 return (JArray) dataFile[datumId.ToString()]?[SessionsDoneKey];
             }
 
@@ -326,7 +334,7 @@ namespace TelegramDataEnrichment.Sessions
                 foreach (var pair in dataFile)
                 {
                     var datumEntry = (JObject) pair.Value;
-                    if ((datumEntry[SessionsDoneKey] ?? new JArray()).Contains(sessionName))
+                    if ((datumEntry[SessionsDoneKey] ?? new JArray()).Any(t => t.ToString().Equals(sessionName)))
                     {
                         matchingDatumIds.Add(Datum.FromJson(new DatumId(pair.Key), datumEntry));
                     }
@@ -335,14 +343,13 @@ namespace TelegramDataEnrichment.Sessions
                 return matchingDatumIds;
             }
 
-            internal void WriteFile()
+            internal void WriteFile(JObject dataFile)
             {
                 if (!File.Exists(_fileName))
                 {
                     var parent = Directory.GetParent(_fileName);
                     Directory.CreateDirectory(parent.FullName);
                 }
-                var dataFile = ParseJsonFile();
                 File.WriteAllText(_fileName, dataFile.ToString());
             }
         }
