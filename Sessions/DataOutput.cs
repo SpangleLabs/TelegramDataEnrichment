@@ -1,7 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace TelegramDataEnrichment.Sessions
 {
@@ -9,7 +11,8 @@ namespace TelegramDataEnrichment.Sessions
     {
         public enum DataOutputTypes
         {
-            SubDirectory
+            SubDirectory,
+            Json
         }
 
         public abstract List<Datum> RemoveCompleted(List<Datum> data);
@@ -25,6 +28,8 @@ namespace TelegramDataEnrichment.Sessions
         {
             public DataOutputTypes Type { get; set; }
             public string DataDirectory { get; set; }
+            public string DataFilename { get; set; }
+            public string JsonTagsKey { get; set; }
         }
 
         public static DataOutput FromData(string sessionName, DataOutputData data, DataSource.DataSourceData sourceData)
@@ -33,6 +38,8 @@ namespace TelegramDataEnrichment.Sessions
             {
                 case DataOutputTypes.SubDirectory:
                     return new SubDirectoryOutput(sourceData.DirectoryName);
+                case DataOutputTypes.Json:
+                    return new JsonOutput(sessionName, data.DataFilename, data.JsonTagsKey);
                 default:
                     return null;
             }
@@ -112,6 +119,232 @@ namespace TelegramDataEnrichment.Sessions
             }
 
             return new List<string>();
+        }
+    }
+
+    public class JsonOutput : DataOutput
+    {
+        private readonly string _sessionName;
+        private readonly string _fileName;
+        private readonly string _tagsKey;
+        private const string SessionsDoneKey = "__sessions_completed";
+        private readonly JsonDataHandler _handler;
+
+        public JsonOutput(string sessionName, string fileName, string tagsKey)
+        {
+            _sessionName = sessionName;
+            _fileName = fileName;
+            _tagsKey = tagsKey;
+            _handler = new JsonDataHandler(fileName, tagsKey);
+        }
+        
+        public override List<Datum> RemoveCompleted(List<Datum> data)
+        {
+            var completed = ListCompleted();
+            return data.Where(d => !completed.Contains(d)).ToList();
+        }
+
+        public override List<Datum> ListCompleted()
+        {
+            return new List<Datum>(_handler.ListCompleted(_sessionName));
+        }
+
+        public override DataOutputData ToData()
+        {
+            return new DataOutputData
+            {
+                Type = DataOutputTypes.Json,
+                DataFilename = _fileName,
+                JsonTagsKey = _tagsKey
+            };
+        }
+
+        public override void HandleDatum(Datum datum, string option)
+        {
+            _handler.ValidateDatumEntry(datum.DatumId);
+
+            var optionsList = _handler.GetOptionsList(datum.DatumId);
+            optionsList.Add(option);
+            
+            _handler.WriteFile();
+        }
+
+        public override void HandleDatumDone(Datum datum)
+        {
+            _handler.ValidateDatumEntry(datum.DatumId);
+
+            var sessionsCompleteList = _handler.GetSessionsCompletedList(datum.DatumId);
+            sessionsCompleteList.Add(_sessionName);
+            
+            _handler.WriteFile();
+        }
+
+        public override List<string> GetOptionsForData(Datum datum)
+        {
+            return _handler.GetOptionsList(datum.DatumId).ToObject<List<string>>();
+        }
+
+        class JsonDataOutputException : Exception
+        {
+            public JsonDataOutputException(string fault)
+                : base($"Fault in JSON data output: {fault}")
+            {
+            }
+
+            public JsonDataOutputException(DatumId datumId, string message)
+                : base($"Fault in JSON data output with Datum ID: \"{datumId}\". Fault: {message}")
+            {
+            }
+        }
+
+        private class JsonDataHandler
+        {
+            private readonly string _fileName;
+            private readonly string _tagsKey;
+
+            internal JsonDataHandler(string fileName, string tagsKey)
+            {
+                _fileName = fileName;
+                _tagsKey = tagsKey;
+                ParseJsonFile();  // Validate
+            }
+            
+            private string ReadJsonFile()
+            {
+                string jsonString;
+                try
+                {
+                    jsonString = File.ReadAllText(_fileName);
+                }
+                catch (FileNotFoundException)
+                {
+                    jsonString = "{}";
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    jsonString = "{}";
+                }
+
+                return jsonString;
+            }
+
+            private JObject ParseJsonFile()
+            {
+                var jsonString = ReadJsonFile();
+                if (jsonString == null || jsonString.Equals("")) jsonString = "{}";
+                try
+                {
+                    return JObject.Parse(jsonString);
+                }
+                catch (JsonException ex)
+                {
+                    throw new JsonDataOutputException($"Exception while parsing JSON: {ex.Message}");
+                }
+            }
+
+            internal void ValidateDatumEntry(DatumId datumId)
+            {
+                var dataFile = ParseJsonFile();
+                JObject datumEntry;
+                try
+                {
+                    datumEntry = (JObject) dataFile[datumId.ToString()];
+                }
+                catch (InvalidCastException)
+                {
+                    throw new JsonDataOutputException(
+                        datumId,
+                        "Failure to parse data entry, datum ID already points to a non-object value in the output file."
+                    );
+                }
+
+                if (datumEntry == null)
+                {
+                    datumEntry = new JObject();
+                    dataFile[datumId] = datumEntry;
+                }
+
+                JArray sessionsDoneList;
+                try
+                {
+                    sessionsDoneList = (JArray) datumEntry[SessionsDoneKey];
+                }
+                catch (InvalidCastException)
+                {
+                    throw new JsonDataOutputException(
+                        datumId,
+                        $"Failure to parse data entry, datum ID already has a \"{SessionsDoneKey}\" key " +
+                        "(the key the bot intends to use to store which enrichment sessions are completed) " +
+                        "pointing to a non-array value in the output file."
+                    );
+                }
+
+                if (sessionsDoneList == null)
+                {
+                    sessionsDoneList = new JArray();
+                    datumEntry[SessionsDoneKey] = sessionsDoneList;
+                }
+
+                JArray tagList;
+                try
+                {
+                    tagList = (JArray) datumEntry[_tagsKey];
+                }
+                catch (InvalidCastException)
+                {
+                    throw new JsonDataOutputException(
+                        datumId,
+                        $"Failure to parse data entry, datum ID already has a \"{_tagsKey}\" key " +
+                        "(the key the bot intends to use to store the output of this enrichment session) " +
+                        "pointing to a non-array value in the output file."
+                    );
+                }
+
+                if (tagList == null)
+                {
+                    tagList = new JArray();
+                    datumEntry[_tagsKey] = tagList;
+                }
+            }
+
+            internal JArray GetOptionsList(DatumId datumId)
+            {
+                var dataFile = ParseJsonFile();
+                return (JArray) dataFile[datumId.ToString()]?[_tagsKey];
+            }
+
+            internal JArray GetSessionsCompletedList(DatumId datumId)
+            {
+                var dataFile = ParseJsonFile();
+                return (JArray) dataFile[datumId.ToString()]?[SessionsDoneKey];
+            }
+
+            internal IEnumerable<JsonDatum> ListCompleted(string sessionName)
+            {
+                var dataFile = ParseJsonFile();
+                var matchingDatumIds = new List<JsonDatum>();
+                foreach (var pair in dataFile)
+                {
+                    var datumEntry = (JObject) pair.Value;
+                    if ((datumEntry[SessionsDoneKey] ?? new JArray()).Contains(sessionName))
+                    {
+                        matchingDatumIds.Add(Datum.FromJson(new DatumId(pair.Key), datumEntry));
+                    }
+                }
+
+                return matchingDatumIds;
+            }
+
+            internal void WriteFile()
+            {
+                if (!File.Exists(_fileName))
+                {
+                    var parent = Directory.GetParent(_fileName);
+                    Directory.CreateDirectory(parent.FullName);
+                }
+                var dataFile = ParseJsonFile();
+                File.WriteAllText(_fileName, dataFile.ToString());
+            }
         }
     }
 }
