@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -118,7 +118,9 @@ namespace TelegramDataEnrichment.Sessions
             foreach (var datum in matchingData)
             {
                 _dataOutput.HandleDatum(datum, option);
-                if (!_canSelectMultipleOptions) RemoveMessage(datum);
+                if (_canSelectMultipleOptions) continue;
+                _dataOutput.HandleDatumDone(datum);
+                RemoveMessage(datum);
             }
             PostMessages();
         }
