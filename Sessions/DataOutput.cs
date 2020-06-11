@@ -27,7 +27,7 @@ namespace TelegramDataEnrichment.Sessions
             public string DataDirectory { get; set; }
         }
 
-        public static DataOutput FromData(DataOutputData data, DataSource.DataSourceData sourceData)
+        public static DataOutput FromData(string sessionName, DataOutputData data, DataSource.DataSourceData sourceData)
         {
             switch (data.Type)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -65,7 +65,7 @@ namespace TelegramDataEnrichment.Sessions
             _batchCount = data.BatchCount;
             _dataSource = DataSource.FromData(data.DataSource);
             _isRandomOrder = data.IsRandomOrder;
-            _dataOutput = DataOutput.FromData(data.DataOutput, data.DataSource);
+            _dataOutput = DataOutput.FromData(data.Name, data.DataOutput, data.DataSource);
             _options = data.Options;
             _canAddOptions = data.CanAddOptions;
             _canSelectMultipleOptions = data.CanSelectMultipleOptions;
