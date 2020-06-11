@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DreadBot;
 using TelegramDataEnrichment.Sessions;
@@ -158,6 +158,34 @@ namespace TelegramDataEnrichment
             }
 
             return keyboard;
+        }
+    }
+
+    internal class CreateSessionOutputJsonFileName : Menu
+    {
+        protected override string Text()
+        {
+            return "Please specify the filename to save output data to, as json";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
+        }
+    }
+
+    internal class CreateSessionOutputJsonTagKey : Menu
+    {
+        protected override string Text()
+        {
+            return
+                "Please specify the key that should be used to store the list of selected tags/options, " +
+                "for each data entry in the output file.";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
         }
     }
 

@@ -228,7 +228,7 @@ namespace TelegramDataEnrichment.Sessions
             }
 
             var dataSource = _dataSource.BuildSource();
-            var dataOutput = _dataOutput.BuildOutput(dataSource.ToData());
+            var dataOutput = _dataOutput.BuildOutput(_name, dataSource.ToData());
 
             return new EnrichmentSession(
                 nextId,
