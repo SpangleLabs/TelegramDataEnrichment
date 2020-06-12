@@ -118,9 +118,15 @@ namespace TelegramDataEnrichment.Sessions
             foreach (var datum in matchingData)
             {
                 _dataOutput.HandleDatum(datum, option);
-                if (_canSelectMultipleOptions) continue;
-                _dataOutput.HandleDatumDone(datum);
-                RemoveMessage(datum);
+                if (_canSelectMultipleOptions)
+                {
+                    UpdateKeyboard(_idIndex.GetCallbackIdFromDatumId(datumId));
+                }
+                else
+                {
+                    _dataOutput.HandleDatumDone(datum);
+                    RemoveMessage(datum);
+                }
             }
             PostMessages();
         }
