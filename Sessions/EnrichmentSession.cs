@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -125,7 +125,7 @@ namespace TelegramDataEnrichment.Sessions
                 else
                 {
                     _dataOutput.HandleDatumDone(datum);
-                    RemoveMessage(datum);
+                    RemoveMessage(datumId);
                 }
             }
             PostMessages();
@@ -137,8 +137,8 @@ namespace TelegramDataEnrichment.Sessions
             foreach (var datum in matchingData)
             {
                 _dataOutput.HandleDatumDone(datum);
-                RemoveMessage(datum);
             }
+            RemoveMessage(datumId);
             PostMessages();
         }
 
@@ -158,9 +158,9 @@ namespace TelegramDataEnrichment.Sessions
             return new AddedNewSessionOption(this, newOption);
         }
 
-        private void RemoveMessage(Datum datum)
+        private void RemoveMessage(DatumId datumId)
         {
-            var callbackId = _idIndex.GetCallbackIdFromDatumId(datum.DatumId);
+            var callbackId = _idIndex.GetCallbackIdFromDatumId(datumId);
             var messageId = _idIndex.GetMessageIdFromCallbackId(callbackId);
             Methods.deleteMessage(_chatId, messageId);
             _idIndex.RemoveMessageByCallbackId(callbackId);
