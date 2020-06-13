@@ -134,6 +134,7 @@ namespace TelegramDataEnrichment
                 foreach (var session in _sessions)
                 {
                     menu = session.HandleMessage(eventArgs.msg);
+                    _database.SaveSession(session);
                     if (menu != null) break;
                 }
             }
