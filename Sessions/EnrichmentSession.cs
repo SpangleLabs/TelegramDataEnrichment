@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -236,6 +236,8 @@ namespace TelegramDataEnrichment.Sessions
                 }
             }
 
+            rowId++;
+            
             if (pages > 1 && currentPage > 0)
             { 
                 keyboard.addCallbackButton("⬅️Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
