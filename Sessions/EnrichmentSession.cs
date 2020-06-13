@@ -163,6 +163,10 @@ namespace TelegramDataEnrichment.Sessions
             var callbackId = _idIndex.GetCallbackIdFromMessageId((long) replyingTo);
             var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
             MarkDatum(datumId, newOption);
+            foreach (var messageId in _idIndex.MessageIds())
+            {
+                UpdateKeyboard(_idIndex.GetCallbackIdFromMessageId(messageId));
+            }
             return new AddedNewSessionOption(this, newOption);
         }
 
