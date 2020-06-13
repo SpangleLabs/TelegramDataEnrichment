@@ -11,6 +11,7 @@ namespace TelegramDataEnrichment.Sessions
         private const string CallbackDone = "done";
         private const string CallbackPrev = "prev";
         private const string CallbackNext = "next";
+        private const string CallbackRand = "rand";
         public bool IsActive { get; private set; }
         public string Name { get; }
         public int Id { get; }
@@ -99,6 +100,13 @@ namespace TelegramDataEnrichment.Sessions
             {
                 _idIndex.NextPageByCallbackId(callbackId);
                 UpdateKeyboard(callbackId);
+                return;
+            }
+
+            if (optionId.Equals(CallbackRand))
+            {
+                RemoveMessage(datumId);
+                PostMessages();
                 return;
             }
             
@@ -226,14 +234,19 @@ namespace TelegramDataEnrichment.Sessions
 
             if (pages > 1 && currentPage > 0)
             { 
-                keyboard.addCallbackButton("Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
+                keyboard.addCallbackButton("⬅️Prev page", $"{CallbackName}:{Id}:{callbackId}:{CallbackPrev}", rowId);
             }
             if (_canSelectMultipleOptions)
             {
-                keyboard.addCallbackButton("*Done*", $"{CallbackName}:{Id}:{callbackId}:{CallbackDone}", rowId);
+                keyboard.addCallbackButton("🖊️️*Done*", $"{CallbackName}:{Id}:{callbackId}:{CallbackDone}", rowId);
+            }
+
+            if (_isRandomOrder)
+            {
+                keyboard.addCallbackButton("🎲Re-roll", $"{CallbackName}:{Id}:{callbackId}:{CallbackRand}", rowId);
             }
             if (pages > 1 && currentPage + 1 < pages) { 
-                keyboard.addCallbackButton("Next page", $"{CallbackName}:{Id}:{callbackId}:{CallbackNext}", rowId);
+                keyboard.addCallbackButton("➡️Next page", $"{CallbackName}:{Id}:{callbackId}:{CallbackNext}", rowId);
             }
 
             rowId++;
