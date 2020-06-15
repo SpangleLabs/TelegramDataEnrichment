@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DreadBot;
 using TelegramDataEnrichment.Sessions;
 
@@ -286,6 +287,57 @@ namespace TelegramDataEnrichment
         protected override InlineKeyboardMarkup Keyboard()
         {
             return null;
+        }
+    }
+
+    public class EnrichmentExceptionMenu : Menu
+    {
+        private readonly EnrichmentException _ex;
+        private readonly bool _withBackButton;
+
+        public EnrichmentExceptionMenu(EnrichmentException ex, bool withBackButton = false)
+        {
+            _ex = ex;
+            _withBackButton = withBackButton;
+        }
+        protected override string Text()
+        {
+            return $"An enrichment exception was thrown.\n{_ex}";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            if (!_withBackButton) return null;
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("🔙 to root menu", RootMenu.CallbackName, 0);
+            return keyboard;
+        }
+    }
+
+    public class UnknownExceptionMenu : Menu
+    {
+        private readonly Exception _ex;
+        private readonly bool _withBackButton;
+
+        public UnknownExceptionMenu(Exception ex, bool withBackButton = false)
+        {
+            _ex = ex;
+            _withBackButton = withBackButton;
+        }
+        
+        protected override string Text()
+        {
+            var guid = Guid.NewGuid().ToString("N").Substring(0, 8);
+            Logger.LogError($"Error ID{guid}: {_ex}");
+            return $"An error occurred. It is viewable in the logs with ID {guid}";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            if (!_withBackButton) return null;
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("🔙 to root menu", RootMenu.CallbackName, 0);
+            return keyboard;
         }
     }
 }

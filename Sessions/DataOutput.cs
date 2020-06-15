@@ -192,7 +192,7 @@ namespace TelegramDataEnrichment.Sessions
             return _handler.GetOptionsList(dataFile, datum.DatumId).ToObject<List<string>>();
         }
 
-        class JsonDataOutputException : Exception
+        class JsonDataOutputException : EnrichmentException
         {
             public JsonDataOutputException(string fault)
                 : base($"Fault in JSON data output: {fault}")

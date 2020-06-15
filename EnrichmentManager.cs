@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DreadBot;
@@ -33,67 +34,79 @@ namespace TelegramDataEnrichment
 
             Methods.answerCallbackQuery(callback.id);
             Menu menu = null;
-            switch (callback.data)
+            try
             {
-                case RootMenu.CallbackName:
-                    menu = new RootMenu(_sessions, _partialSession != null);
-                    break;
-                case StartSessionMenu.CallbackName:
-                    menu = new StartSessionMenu(_sessions);
-                    break;
-                case StopSessionMenu.CallbackName:
-                    menu = new StopSessionMenu(_sessions);
-                    break;
-                case CreateSessionMenu.CallbackName:
-                    _partialSession = new PartialSession(callback.message.chat.id);
-                    _database.SavePartial(_partialSession);
-                    menu = new CreateSessionMenu();
-                    break;
-                case DeleteSessionMenu.CallBackName:
-                    menu = new DeleteSessionMenu(_sessions);
-                    break;
-            }
-
-            if (callback.data.StartsWith(StartSessionMenu.CallbackName + ":"))
-            {
-                menu = StartSession(callback.data);
-            }
-            else if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
-            {
-                menu = StopSession(callback.data);
-            }
-            else if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
-            {
-                menu = ConfirmDeleteSession(callback);
-            }
-            else if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
-            {
-                menu = DeleteSession(callback);
-            }
-
-            if (menu == null && _partialSession != null && _partialSession.WaitingForCallback())
-            {
-                _partialSession.AddCallback(callback.data);
-                _database.SavePartial(_partialSession);
-                menu = CheckPartialCompletionAndGetNextMenu();
-            }
-            
-            if (menu == null)
-            {
-                if (callback.data.StartsWith(EnrichmentSession.CallbackName + ":"))
+                switch (callback.data)
                 {
-                    var sessionId = callback.data.Split(':')[1];
-                    var matchingSessions = _sessions.Where(s => s.IsActive && s.Id.ToString().Equals(sessionId)).ToList();
-                    foreach (var session in matchingSessions)
+                    case RootMenu.CallbackName:
+                        menu = new RootMenu(_sessions, _partialSession != null);
+                        break;
+                    case StartSessionMenu.CallbackName:
+                        menu = new StartSessionMenu(_sessions);
+                        break;
+                    case StopSessionMenu.CallbackName:
+                        menu = new StopSessionMenu(_sessions);
+                        break;
+                    case CreateSessionMenu.CallbackName:
+                        _partialSession = new PartialSession(callback.message.chat.id);
+                        _database.SavePartial(_partialSession);
+                        menu = new CreateSessionMenu();
+                        break;
+                    case DeleteSessionMenu.CallBackName:
+                        menu = new DeleteSessionMenu(_sessions);
+                        break;
+                }
+
+                if (callback.data.StartsWith(StartSessionMenu.CallbackName + ":"))
+                {
+                    menu = StartSession(callback.data);
+                }
+                else if (callback.data.StartsWith(StopSessionMenu.CallbackName + ":"))
+                {
+                    menu = StopSession(callback.data);
+                }
+                else if (callback.data.StartsWith(DeleteSessionMenu.CallBackName + ":"))
+                {
+                    menu = ConfirmDeleteSession(callback);
+                }
+                else if (callback.data.StartsWith(DeleteSessionConfirmedMenu.CallbackName + ":"))
+                {
+                    menu = DeleteSession(callback);
+                }
+
+                if (menu == null && _partialSession != null && _partialSession.WaitingForCallback())
+                {
+                    _partialSession.AddCallback(callback.data);
+                    _database.SavePartial(_partialSession);
+                    menu = CheckPartialCompletionAndGetNextMenu();
+                }
+
+                if (menu == null)
+                {
+                    if (callback.data.StartsWith(EnrichmentSession.CallbackName + ":"))
                     {
-                        session.HandleCallback(callback.data);
-                        _database.SaveSession(session);
+                        var sessionId = callback.data.Split(':')[1];
+                        var matchingSessions =
+                            _sessions.Where(s => s.IsActive && s.Id.ToString().Equals(sessionId)).ToList();
+                        foreach (var session in matchingSessions)
+                        {
+                            session.HandleCallback(callback.data);
+                            _database.SaveSession(session);
+                        }
+                    }
+                    else
+                    {
+                        menu = new UnknownMenu(callback.data);
                     }
                 }
-                else
-                {
-                    menu = new UnknownMenu(callback.data);
-                }
+            }
+            catch (EnrichmentException ex)
+            {
+                menu = new EnrichmentExceptionMenu(ex, true);
+            }
+            catch (Exception ex)
+            {
+                menu = new UnknownExceptionMenu(ex, true);
             }
 
             menu?.EditMessage(
@@ -101,7 +114,7 @@ namespace TelegramDataEnrichment
                 callback.message.message_id
             );
         }
-        
+
         public void HandleText(MessageEventArgs eventArgs)
         {
             var msg = eventArgs.msg;
@@ -112,31 +125,43 @@ namespace TelegramDataEnrichment
             }
 
             Menu menu = null;
-            switch (eventArgs.msg.text)
+
+            try
             {
-                case "/menu":
+                switch (eventArgs.msg.text)
                 {
-                    menu = new RootMenu(_sessions, _partialSession != null);
-                    _partialSession = null;
-                    break;
+                    case "/menu":
+                    {
+                        menu = new RootMenu(_sessions, _partialSession != null);
+                        _partialSession = null;
+                        break;
+                    }
+                }
+
+                if (menu == null && _partialSession != null && _partialSession.WaitingForText())
+                {
+                    _partialSession.AddText(eventArgs.msg.text);
+                    _database.SavePartial(_partialSession);
+                    menu = CheckPartialCompletionAndGetNextMenu();
+                }
+
+                if (menu == null)
+                {
+                    foreach (var session in _sessions)
+                    {
+                        menu = session.HandleMessage(eventArgs.msg);
+                        _database.SaveSession(session);
+                        if (menu != null) break;
+                    }
                 }
             }
-
-            if (menu == null && _partialSession != null && _partialSession.WaitingForText())
+            catch (EnrichmentException ex)
             {
-                _partialSession.AddText(eventArgs.msg.text);
-                _database.SavePartial(_partialSession);
-                menu = CheckPartialCompletionAndGetNextMenu();
+                menu = new EnrichmentExceptionMenu(ex);
             }
-
-            if (menu == null)
+            catch (Exception ex)
             {
-                foreach (var session in _sessions)
-                {
-                    menu = session.HandleMessage(eventArgs.msg);
-                    _database.SaveSession(session);
-                    if (menu != null) break;
-                }
+                menu = new UnknownExceptionMenu(ex);
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);

@@ -11,7 +11,7 @@ namespace TelegramDataEnrichment
     {
         private const string SessionsDoneKey = "__sessions_completed";
 
-        class JsonDataOutputException : Exception
+        class JsonDataOutputException : EnrichmentException
         {
             public JsonDataOutputException(string fault)
                 : base($"Fault in JSON data output: {fault}")
