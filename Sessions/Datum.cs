@@ -73,6 +73,9 @@ namespace TelegramDataEnrichment.Sessions
                 case ".jpg":
                 case ".jpeg":
                     return  new ImageDatum(datumId, fileName);
+                case ".mp4":
+                case ".gif":
+                    return new AnimationDatum(datumId, fileName);
                 default:
                     return new DocumentDatum(datumId, fileName);
             }
@@ -128,9 +131,22 @@ namespace TelegramDataEnrichment.Sessions
         }
     }
 
+    public class AnimationDatum : FileDatum
+    {
+        public AnimationDatum(DatumId datumId, string documentPath) : base(datumId, documentPath)
+        {
+        }
+
+        public override Result<Message> Post(long chatId, InlineKeyboardMarkup keyboard)
+        {
+            var stream = File.OpenRead(FileName);
+            return Methods.sendAnimation(chatId, stream, FileName, keyboard: keyboard);
+        }
+    }
     public class DocumentDatum : FileDatum
     {
-        public DocumentDatum(DatumId datumId, string documentPath) : base(datumId, documentPath)
+        public DocumentDatum(DatumId datumId, string documentPath)
+            : base(datumId, documentPath)
         {
         }
 
@@ -138,7 +154,7 @@ namespace TelegramDataEnrichment.Sessions
         {
             var stream = File.OpenRead(FileName);
             var docContent = new StreamContent(stream);
-            return Methods.sendDocument(chatId, docContent, "", keyboard: keyboard);
+            return Methods.sendDocument(chatId, docContent, FileName, keyboard: keyboard);
         }
     }
 
