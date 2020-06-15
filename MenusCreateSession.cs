@@ -220,6 +220,24 @@ namespace TelegramDataEnrichment
         }
     }
 
+    internal class CreateSessionOptionsAlphabetical : Menu
+    {
+        public const string CallbackName = "session_c_options_alphabetical";
+
+        protected override string Text()
+        {
+            return "Should options be ordered alphabetically?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Automatically order options", $"{CallbackName}:{true}", 0);
+            keyboard.addCallbackButton("Keep in the order they are added", $"{CallbackName}:{false}", 1);
+            return keyboard;
+        }
+    }
+
     internal class CreateSessionOptionsMulti : Menu
     {
         public const string CallbackName = "session_c_options_multi";

@@ -22,6 +22,7 @@ namespace TelegramDataEnrichment.Sessions
         private readonly DataOutput _dataOutput;
         private readonly List<string> _options;
         private readonly bool _canAddOptions;
+        private readonly bool _autoOrderOptions;
         private readonly bool _canSelectMultipleOptions;
         private readonly SessionIdIndex _idIndex;
 
@@ -35,6 +36,7 @@ namespace TelegramDataEnrichment.Sessions
             DataOutput dataOutput,
             List<string> options,
             bool canAddOptions,
+            bool autoOrderOptions,
             bool canSelectMultipleOptions
         )
         {
@@ -48,6 +50,7 @@ namespace TelegramDataEnrichment.Sessions
             _dataOutput = dataOutput;
             _options = options;
             _canAddOptions = canAddOptions;
+            _autoOrderOptions = autoOrderOptions;
             _canSelectMultipleOptions = canSelectMultipleOptions;
             _idIndex = new SessionIdIndex(_options);
         }
@@ -69,6 +72,7 @@ namespace TelegramDataEnrichment.Sessions
             _dataOutput = DataOutput.FromData(data.Name, data.DataOutput, data.DataSource);
             _options = data.Options;
             _canAddOptions = data.CanAddOptions;
+            _autoOrderOptions = data.AutoOrderOptions;
             _canSelectMultipleOptions = data.CanSelectMultipleOptions;
             _idIndex = new SessionIdIndex(data.IdIndex);
         }
@@ -224,7 +228,8 @@ namespace TelegramDataEnrichment.Sessions
             var currentPage = _idIndex.GetPageFromCallbackId(callbackId);
             var totalOptions = _options.Count;
             var pages = ((totalOptions - 1) / perPage) + 1;
-            var optionsOnPage = _options.Skip(perPage * currentPage).Take(perPage).ToList();
+            var orderedOptions = _autoOrderOptions ? _options.OrderBy(e => e).ToList() : _options;
+            var optionsOnPage = orderedOptions.Skip(perPage * currentPage).Take(perPage).ToList();
             var numOptionsOnPage = optionsOnPage.Count;
             var columns = ((numOptionsOnPage - 1) / maxRows) + 1;
 
@@ -326,6 +331,7 @@ namespace TelegramDataEnrichment.Sessions
                 DataOutput = _dataOutput.ToData(),
                 Options = _options,
                 CanAddOptions = _canAddOptions,
+                AutoOrderOptions = _autoOrderOptions,
                 CanSelectMultipleOptions = _canSelectMultipleOptions,
                 IdIndex = _idIndex.ToData()
             };
@@ -343,6 +349,7 @@ namespace TelegramDataEnrichment.Sessions
             public DataOutput.DataOutputData DataOutput { get; set; }
             public List<string> Options { get; set; }
             public bool CanAddOptions { get; set; }
+            public bool AutoOrderOptions { get; set; }
             public bool CanSelectMultipleOptions { get; set; }
             public SessionIdIndex.IdIndexData IdIndex { get; set; }
         }

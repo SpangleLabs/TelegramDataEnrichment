@@ -14,6 +14,7 @@ namespace TelegramDataEnrichment.Sessions
             DataOutput,
             Options,
             OptionsExpandable,
+            OptionsAlphabetical,
             OptionsMulti,
             Done
         }
@@ -27,6 +28,7 @@ namespace TelegramDataEnrichment.Sessions
         private readonly PartialOutput _dataOutput;
         private List<string> _options;
         private bool? _canAddOptions;
+        private bool? _autoOrderOptions;
         private bool? _canSelectMultipleOptions;
 
         public PartialSession(long chatId)
@@ -47,6 +49,7 @@ namespace TelegramDataEnrichment.Sessions
             _dataOutput = new PartialOutput(data.DataOutput);
             _options = data.Options;
             _canAddOptions = data.CanAddOptions;
+            _autoOrderOptions = data.AutoOrderOptions;
             _canSelectMultipleOptions = data.CanSelectMultipleOptions;
         }
 
@@ -67,10 +70,12 @@ namespace TelegramDataEnrichment.Sessions
             {
                 return SessionParts.DataOutput;
             }
+
             if (!_dataOutput.AllowMultipleOptions()) _canSelectMultipleOptions = false;
 
             if (_options == null) return SessionParts.Options;
             if (_canAddOptions == null) return SessionParts.OptionsExpandable;
+            if (_canAddOptions == true && _autoOrderOptions == null) return SessionParts.OptionsAlphabetical;
             if (_canSelectMultipleOptions == null) return SessionParts.OptionsMulti;
 
             return SessionParts.Done;
@@ -94,6 +99,8 @@ namespace TelegramDataEnrichment.Sessions
                     return new CreateSessionOptions();
                 case SessionParts.OptionsExpandable:
                     return new CreateSessionOptionsExpandable();
+                case SessionParts.OptionsAlphabetical:
+                    return new CreateSessionOptionsAlphabetical();
                 case SessionParts.OptionsMulti:
                     return new CreateSessionOptionsMulti();
                 case SessionParts.Done:
@@ -154,6 +161,8 @@ namespace TelegramDataEnrichment.Sessions
                     return _dataOutput.WaitingForCallback();
                 case SessionParts.OptionsExpandable:
                     return true;
+                case SessionParts.OptionsAlphabetical:
+                    return true;
                 case SessionParts.OptionsMulti:
                     return true;
                 default:
@@ -199,6 +208,16 @@ namespace TelegramDataEnrichment.Sessions
             {
                 var expandable = callbackData.Split(':')[1];
                 _canAddOptions = bool.Parse(expandable);
+                if (_canAddOptions == false) _autoOrderOptions = false;
+            }
+
+            if (
+                nextPart == SessionParts.OptionsAlphabetical &&
+                callbackData.StartsWith($"{CreateSessionOptionsAlphabetical.CallbackName}:")
+            )
+            {
+                var autoOrder = callbackData.Split(':')[1];
+                _autoOrderOptions = bool.Parse(autoOrder);
             }
 
             if (
@@ -221,6 +240,7 @@ namespace TelegramDataEnrichment.Sessions
                 || _dataOutput.NextPart() != PartialOutput.OutputParts.Done
                 || _options == null
                 || _canAddOptions == null
+                || _autoOrderOptions == null
                 || _canSelectMultipleOptions == null
             )
             {
@@ -240,6 +260,7 @@ namespace TelegramDataEnrichment.Sessions
                 dataOutput,
                 _options,
                 (bool) _canAddOptions,
+                (bool) _autoOrderOptions,
                 (bool) _canSelectMultipleOptions
             );
         }
@@ -257,6 +278,7 @@ namespace TelegramDataEnrichment.Sessions
                 DataOutput = _dataOutput.ToData(),
                 Options = _options,
                 CanAddOptions = _canAddOptions,
+                AutoOrderOptions = _autoOrderOptions,
                 CanSelectMultipleOptions = _canSelectMultipleOptions
             };
         }
@@ -272,6 +294,7 @@ namespace TelegramDataEnrichment.Sessions
             public PartialOutput.PartialData DataOutput { get; set; }
             public List<string> Options { get; set; }
             public bool? CanAddOptions { get; set; }
+            public bool? AutoOrderOptions { get; set; }
             public bool? CanSelectMultipleOptions { get; set; }
         }
     }
