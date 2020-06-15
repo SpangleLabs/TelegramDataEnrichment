@@ -157,15 +157,25 @@ namespace TelegramDataEnrichment.Sessions
             if (replyingTo == null) return null;
             if (!_idIndex.MessageIds().Contains((long) replyingTo)) return null;
             var newOption = msg.text.Trim();
-            _options.Add(newOption);
-            _idIndex.AddOption(newOption);
 
+            // Mark datum with new option
             var callbackId = _idIndex.GetCallbackIdFromMessageId((long) replyingTo);
             var datumId = _idIndex.GetDatumIdFromCallbackId(callbackId);
             MarkDatum(datumId, newOption);
-            foreach (var messageId in _idIndex.MessageIds())
+            
+            // If option is really new, add it and update all keyboards
+            if (_options.Contains(newOption))
             {
-                UpdateKeyboard(_idIndex.GetCallbackIdFromMessageId(messageId));
+                UpdateKeyboard(callbackId);
+            }
+            else
+            {
+                _options.Add(newOption);
+                _idIndex.AddOption(newOption);
+                foreach (var messageId in _idIndex.MessageIds())
+                {
+                    UpdateKeyboard(_idIndex.GetCallbackIdFromMessageId(messageId));
+                }
             }
             return new AddedNewSessionOption(this, newOption);
         }
