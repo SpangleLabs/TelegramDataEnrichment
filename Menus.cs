@@ -12,12 +12,12 @@ namespace TelegramDataEnrichment
 
         public void SendReply(long chatId, long messageId)
         {
-            Methods.sendReply(chatId, messageId, Text(), keyboard: Keyboard());
+            Methods.sendReply(chatId, messageId, Text(), keyboard: Keyboard(), parse_mode: "html");
         }
 
         public void EditMessage(long chatId, long messageId)
         {
-            Methods.editMessageText(chatId, messageId, Text(), keyboard: Keyboard());
+            Methods.editMessageText(chatId, messageId, Text(), keyboard: Keyboard(), parse_mode: "html");
         }
     }
 
@@ -48,6 +48,7 @@ namespace TelegramDataEnrichment
         private readonly List<EnrichmentSession> _sessions;
         private readonly bool _creationInProgress;
         public const string CallbackName = "menu";
+        private const int BarLength = 10;
 
         public RootMenu(List<EnrichmentSession> sessions, bool creationInProgress)
         {
@@ -70,7 +71,10 @@ namespace TelegramDataEnrichment
                 var doneData = session.CompletedData().Count;
                 var allData = session.AllData().Count;
                 var percentage = (double)doneData / allData;
-                text += $"- {session.Name}: {doneData}/{allData} {percentage:P}\n";
+                text += $"- {session.Name}:\n";
+                var progress = (doneData * BarLength) / allData;
+                var progressBar = new string('█', progress) + new string('_', BarLength - progress);
+                text += $"<pre>[{progressBar}] {percentage:P0} ({doneData}/{allData})</pre>\n";
             }
             return text;
         }
