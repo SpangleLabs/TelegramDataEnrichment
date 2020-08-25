@@ -19,6 +19,11 @@ namespace TelegramDataEnrichment
         {
             Methods.editMessageText(chatId, messageId, Text(), keyboard: Keyboard(), parse_mode: "html");
         }
+
+        public void SendMessage(long chatId)
+        {
+            Methods.sendMessage(chatId, Text(), keyboard: Keyboard(), parse_mode: "html");
+        }
     }
 
     internal class UnknownMenu : Menu
@@ -197,6 +202,43 @@ namespace TelegramDataEnrichment
             var keyboard = new InlineKeyboardMarkup();
             keyboard.addCallbackButton("🔙 to menu", RootMenu.CallbackName, 0);
             return keyboard;
+        }
+    }
+
+    internal class SessionCompleteMenu : Menu
+    {
+        private readonly EnrichmentSession _session;
+        public const string LiveSessionCallBackName = "stay_active";
+        
+        public SessionCompleteMenu(EnrichmentSession session)
+        {
+            _session = session;
+        }
+        
+        protected override string Text()
+        {
+            return "Enrichment session complete!\nWould you like to leave it active for new results?";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            var keyboard = new InlineKeyboardMarkup();
+            keyboard.addCallbackButton("Leave active", $"{LiveSessionCallBackName}:{_session.Id}", 0);
+            keyboard.addCallbackButton("End session", $"{StopSessionMenu.CallbackName}:{_session.Id}", 1);
+            return keyboard;
+        }
+    }
+
+    internal class SessionCompleteLiveMenu : Menu
+    {
+        protected override string Text()
+        {
+            return "Session complete, and watching for updates";
+        }
+
+        protected override InlineKeyboardMarkup Keyboard()
+        {
+            return null;
         }
     }
 

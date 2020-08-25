@@ -184,6 +184,11 @@ namespace TelegramDataEnrichment.Sessions
             return new AddedNewSessionOption(this, newOption);
         }
 
+        public void HandleCron()
+        {
+            PostMessages();
+        }
+
         private void RemoveMessage(DatumId datumId)
         {
             var callbackId = _idIndex.GetCallbackIdFromDatumId(datumId);
@@ -205,8 +210,10 @@ namespace TelegramDataEnrichment.Sessions
             var postData = unpostedData.Take(_batchCount - _idIndex.MessageCount()).ToList();
             if (incompleteData.Count == 0)
             {
-                Methods.sendMessage(_chatId, "Enrichment session complete!");
-                Stop();
+                var menu = new SessionCompleteMenu(this);
+                menu?.SendMessage(
+                    _chatId
+                );
                 return;
             }
             foreach (var datum in postData)

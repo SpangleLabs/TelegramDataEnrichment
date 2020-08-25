@@ -13,6 +13,7 @@ namespace TelegramDataEnrichment
             var manager = new EnrichmentManager(database);
             Events.CallbackEvent += manager.HandleCallback;
             Events.TextEvent += manager.HandleText;
+            Cron.CronFireEvent += manager.HandleCron;
         }
 
         public void PostInit()

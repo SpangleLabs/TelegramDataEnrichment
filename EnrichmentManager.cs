@@ -73,6 +73,10 @@ namespace TelegramDataEnrichment
                 {
                     menu = DeleteSession(callback);
                 }
+                else if (callback.data.StartsWith(SessionCompleteMenu.LiveSessionCallBackName + ":"))
+                {
+                    menu = new SessionCompleteLiveMenu();
+                }
 
                 if (menu == null && _partialSession != null && _partialSession.WaitingForCallback())
                 {
@@ -165,6 +169,14 @@ namespace TelegramDataEnrichment
             }
 
             menu?.SendReply(eventArgs.msg.chat.id, eventArgs.msg.message_id);
+        }
+
+        public void HandleCron(EventArgs eventArgs)
+        {
+            foreach (var session in _sessions.Where(session => session.IsActive))
+            {
+                session.HandleCron();
+            }
         }
 
         private Menu CheckPartialCompletionAndGetNextMenu()
