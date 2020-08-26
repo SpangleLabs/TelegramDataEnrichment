@@ -223,7 +223,7 @@ namespace TelegramDataEnrichment
         protected override InlineKeyboardMarkup Keyboard()
         {
             var keyboard = new InlineKeyboardMarkup();
-            keyboard.addCallbackButton("Leave active", $"{LiveSessionCallBackName}:{_session.Id}", 0);
+            keyboard.addCallbackButton("Keep active", $"{LiveSessionCallBackName}:{_session.Id}", 0);
             keyboard.addCallbackButton("End session", $"{StopSessionMenu.CallbackName}:{_session.Id}", 1);
             return keyboard;
         }

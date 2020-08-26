@@ -75,7 +75,7 @@ namespace TelegramDataEnrichment
                 }
                 else if (callback.data.StartsWith(SessionCompleteMenu.LiveSessionCallBackName + ":"))
                 {
-                    menu = new SessionCompleteLiveMenu();
+                    menu = MarkSessionLive(callback);
                 }
 
                 if (menu == null && _partialSession != null && _partialSession.WaitingForCallback())
@@ -173,7 +173,7 @@ namespace TelegramDataEnrichment
 
         public void HandleCron(EventArgs eventArgs)
         {
-            foreach (var session in _sessions.Where(session => session.IsActive))
+            foreach (var session in _sessions.Where(session => session.IsLive))
             {
                 session.HandleCron();
             }
@@ -251,6 +251,25 @@ namespace TelegramDataEnrichment
                 _sessions.Remove(session);
                 _database.RemoveSession(session);
                 menu = new DeleteSessionConfirmedMenu();
+            }
+
+            return menu;
+        }
+
+        private Menu MarkSessionLive(CallbackQuery callback)
+        {
+            Menu menu;
+            var sessionId = SessionIdFromCallbackData(callback.data);
+            var session = GetSessionById(sessionId);
+            if (session == null)
+            {
+                menu = new NoMatchingSessionMenu(sessionId);
+            }
+            else
+            {
+                session.MarkLive();
+                _database.SaveSession(session);
+                menu = new SessionCompleteLiveMenu();
             }
 
             return menu;

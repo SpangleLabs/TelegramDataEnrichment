@@ -13,6 +13,7 @@ namespace TelegramDataEnrichment.Sessions
         private const string CallbackNext = "next";
         private const string CallbackRand = "rand";
         public bool IsActive { get; private set; }
+        public bool IsLive { get; private set; }
         public string Name { get; }
         public int Id { get; }
         private readonly long _chatId;
@@ -44,6 +45,7 @@ namespace TelegramDataEnrichment.Sessions
             _chatId = chatId;
             Name = name; // User friendly name
             IsActive = false;
+            IsLive = false;
             _batchCount = batchCount; // How many to post at once
             _dataSource = dataSource;
             _isRandomOrder = isRandomOrder;
@@ -66,6 +68,7 @@ namespace TelegramDataEnrichment.Sessions
             _chatId = data.ChatId;
             Name = data.Name;
             IsActive = data.IsActive;
+            IsLive = data.IsLive;
             _batchCount = data.BatchCount;
             _dataSource = DataSource.FromData(data.DataSource);
             _isRandomOrder = data.IsRandomOrder;
@@ -186,7 +189,10 @@ namespace TelegramDataEnrichment.Sessions
 
         public void HandleCron()
         {
-            PostMessages();
+            if (IsLive)
+            {
+                PostMessages();
+            }
         }
 
         private void RemoveMessage(DatumId datumId)
@@ -208,12 +214,13 @@ namespace TelegramDataEnrichment.Sessions
             }
 
             var postData = unpostedData.Take(_batchCount - _idIndex.MessageCount()).ToList();
-            if (incompleteData.Count == 0)
+            if (incompleteData.Count == 0 && !IsLive)
             {
                 var menu = new SessionCompleteMenu(this);
-                menu?.SendMessage(
+                menu.SendMessage(
                     _chatId
                 );
+                Stop();
                 return;
             }
             foreach (var datum in postData)
@@ -293,11 +300,18 @@ namespace TelegramDataEnrichment.Sessions
         public void Stop()
         {
             IsActive = false;
+            IsLive = false;
             foreach (var messageId in _idIndex.MessageIds())
             {
                 Methods.deleteMessage(_chatId, messageId);
             }
             _idIndex.ClearMessages();
+        }
+
+        public void MarkLive()
+        { 
+            IsLive = true;
+            IsActive = true;
         }
 
         public List<Datum> AllData()
@@ -332,6 +346,7 @@ namespace TelegramDataEnrichment.Sessions
                 ChatId = _chatId,
                 Name = Name,
                 IsActive = IsActive,
+                IsLive = IsLive,
                 BatchCount = _batchCount,
                 DataSource = _dataSource.ToData(),
                 IsRandomOrder = _isRandomOrder,
@@ -350,6 +365,7 @@ namespace TelegramDataEnrichment.Sessions
             public long ChatId { get; set; }
             public string Name { get; set; }
             public bool IsActive { get; set; }
+            public bool IsLive { get; set; }
             public int BatchCount { get; set; }
             public DataSource.DataSourceData DataSource { get; set; }
             public bool IsRandomOrder { get; set; }
