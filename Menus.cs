@@ -74,10 +74,10 @@ namespace TelegramDataEnrichment
             foreach (var session in _sessions)
             {
                 var emoji = "";
-                if (session.IsActive()) {
+                if (session.IsActive) {
                     emoji = "▶️";
                 }
-                if (session.IsLive()) {
+                if (session.IsLive) {
                     emoji = "⏳";
                 }
                 text += $"- {emoji}{session.Name}:\n";
