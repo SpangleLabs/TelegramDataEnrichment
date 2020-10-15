@@ -73,10 +73,17 @@ namespace TelegramDataEnrichment
             text += $"There are {_sessions.Count} configured sessions, and {activeSessions} are active.\n";
             foreach (var session in _sessions)
             {
+                var emoji = "";
+                if (session.IsActive()) {
+                    emoji = "▶️";
+                }
+                if (session.IsLive()) {
+                    emoji = "⏳";
+                }
+                text += $"- {emoji}{session.Name}:\n";
                 var doneData = session.CompletedData().Count;
                 var allData = session.AllData().Count;
                 var percentage = (double)doneData / allData;
-                text += $"- {session.Name}:\n";
                 var progress = (doneData * BarLength) / allData;
                 var progressBar = new string('█', progress) + new string('_', BarLength - progress);
                 text += $"<pre>[{progressBar}] {percentage:P0} ({doneData}/{allData})</pre>\n";
