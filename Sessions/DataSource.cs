@@ -54,7 +54,7 @@ namespace TelegramDataEnrichment.Sessions
         
         public override List<Datum> ListData()
         {
-            var files = Directory.GetFiles(_directory);
+            var files = Directory.GetFiles(_directory).OrderBy(f => f);
 
             return new List<Datum>(files.Select(Datum.FromFile));
         }
